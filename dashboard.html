@@ -192,8 +192,30 @@ function addItem(listId, html){
   document.getElementById(listId).prepend(box);
 }
 
-async function addCase() {
+async function loadCases() {
+  const { data, error } = await window.sb
+    .from("cases")
+    .select("*")
+    .order("created_at", { ascending: false });
 
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  document.getElementById("caseList").innerHTML = "";
+
+  data.forEach(c => {
+    addItem("caseList", `
+      <strong>${c.case_name}</strong>
+      <small>Lead: ${c.lead_officer || "Unassigned"} · ${c.location || "Unknown Location"}</small>
+      <div class="status">${c.status}</div>
+      <small>${c.notes || ""}</small>
+    `);
+  });
+}
+
+async function addCase() {
   const {
     data: { user }
   } = await window.sb.auth.getUser();
@@ -216,14 +238,15 @@ async function addCase() {
     return;
   }
 
-  alert("Case created successfully.");
-
   document.getElementById("caseName").value = "";
   document.getElementById("caseLead").value = "";
   document.getElementById("caseLocation").value = "";
   document.getElementById("caseNotes").value = "";
 
+  loadCases();
 }
+
+loadCases();
 
 function addEvidence(){
   addItem("evidenceList", `<strong>${evidenceItem.value || "Evidence Item"}</strong><small>Case: ${evidenceCase.value || "N/A"} · Officer: ${evidenceOfficer.value || "N/A"}</small><div class="status">${evidenceStatus.value}</div>`);
