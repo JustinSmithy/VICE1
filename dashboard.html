@@ -192,8 +192,37 @@ function addItem(listId, html){
   document.getElementById(listId).prepend(box);
 }
 
-function addCase(){
-  addItem("caseList", `<strong>${caseName.value || "Unnamed Case"}</strong><small>Lead: ${caseLead.value || "Unassigned"} · ${caseLocation.value || "Unknown Location"}</small><div class="status">${caseStatus.value}</div><small>${caseNotes.value || ""}</small>`);
+async function addCase() {
+
+  const {
+    data: { user }
+  } = await window.sb.auth.getUser();
+
+  const { error } = await window.sb
+    .from("cases")
+    .insert([
+      {
+        case_name: document.getElementById("caseName").value,
+        lead_officer: document.getElementById("caseLead").value,
+        location: document.getElementById("caseLocation").value,
+        status: document.getElementById("caseStatus").value,
+        notes: document.getElementById("caseNotes").value,
+        created_by: user.id
+      }
+    ]);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Case created successfully.");
+
+  document.getElementById("caseName").value = "";
+  document.getElementById("caseLead").value = "";
+  document.getElementById("caseLocation").value = "";
+  document.getElementById("caseNotes").value = "";
+
 }
 
 function addEvidence(){
