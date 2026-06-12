@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LSPD VICE Unit — Drug Enforcement Division</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html"><span class="badge">LSPD</span><span><strong>Vice Unit</strong><small>Drug Enforcement Division</small></span></a>
+    <nav><a href="#stats">Public Stats</a><a class="btn small" href="#login">Officer Login</a></nav>
+  </header>
+
+  <main class="hero public">
+    <div class="overlay"></div>
+    <section class="hero-content">
+      <p class="eyebrow">Los Santos Police Department · Vice Unit</p>
+      <h1>Drug Enforcement<br><span>Operations Hub</span></h1>
+      <p class="lead">Intelligence-led narcotics enforcement across Los Santos and the State of San Andreas.</p>
+      <p class="motto">Disrupting Networks. Protecting San Andreas.</p>
+      <div class="actions"><a class="btn" href="#login">Officer Portal</a><a class="btn ghost" href="#activity">View Public Logs</a></div>
+    </section>
+  </main>
+
+  <section id="stats" class="stats-grid container">
+    <article><strong>12</strong><span>Active Cases</span></article>
+    <article><strong>7</strong><span>Search Warrants</span></article>
+    <article><strong>34</strong><span>Arrests This Month</span></article>
+    <article><strong>128 lbs</strong><span>Narcotics Seized</span></article>
+  </section>
+
+  <section id="activity" class="container panel">
+    <div class="section-title"><h2>Latest Enforcement Activity</h2><span>Public Record</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Type</th><th>Item</th><th>Location</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>05/25/2024</td><td>Seizure</td><td>42 lbs Cocaine</td><td>Los Santos</td><td><mark>Processed</mark></td></tr>
+          <tr><td>05/24/2024</td><td>Arrest</td><td>Distribution Network</td><td>Ganton</td><td><mark>Filed</mark></td></tr>
+          <tr><td>05/23/2024</td><td>Warrant</td><td>Currency Seizure</td><td>Idlewood</td><td><mark>Closed</mark></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="login" class="container login-card">
+    <div>
+      <p class="eyebrow">Authorized Personnel Only</p>
+      <h2>Officer Login</h2>
+      <p>Sign in with your authorized Supabase account to access case management, intelligence bulletins, and internal reports.</p>
+    </div>
+    <form id="loginForm">
+      <input id="email" type="email" placeholder="Officer email" required />
+      <input id="password" type="password" placeholder="Password" required />
+      <button class="btn" type="submit">Login</button>
+      <p id="authMessage" class="form-message"></p>
+    </form>
+  </section>
+
+  <footer>Los Santos Police Department · VICE Drug Enforcement Unit · San Andreas RP</footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
