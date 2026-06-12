@@ -1,79 +1,297 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LSPD VICE | Drug Enforcement Unit</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LSPD VICE | Drug Enforcement Unit</title>
 
-    <link rel="stylesheet" href="./css/styles.css">
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+body {
+  font-family: Arial, sans-serif;
+  background: #05070c;
+  color: #f4f4f4;
+}
+
+.hero {
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(3,7,18,.45), rgba(3,7,18,.85)),
+    url("assets/vice-hero.png") center/cover no-repeat;
+  padding: 30px;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.badge {
+  background: #d4af37;
+  color: #000;
+  padding: 12px 18px;
+  border-radius: 6px;
+  font-weight: 900;
+}
+
+.logo h3 {
+  letter-spacing: 2px;
+}
+
+.logo p {
+  color: #d4af37;
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+.nav a {
+  color: #fff;
+  text-decoration: none;
+  margin-left: 15px;
+  padding: 12px 18px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  font-weight: 700;
+}
+
+.nav .gold {
+  background: #d4af37;
+  color: #000;
+}
+
+.main {
+  max-width: 1200px;
+  margin: 120px auto 0;
+  display: grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.kicker {
+  color: #d4af37;
+  border: 1px solid rgba(212,175,55,.5);
+  display: inline-block;
+  padding: 8px 18px;
+  border-radius: 30px;
+  letter-spacing: 3px;
+  font-size: 12px;
+  margin-bottom: 25px;
+}
+
+h1 {
+  font-size: 92px;
+  line-height: .9;
+  letter-spacing: 3px;
+}
+
+h2 {
+  color: #d4af37;
+  font-size: 42px;
+  letter-spacing: 5px;
+  margin-top: 20px;
+}
+
+.motto {
+  margin-top: 30px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.desc {
+  margin-top: 25px;
+  max-width: 650px;
+  color: #cbd5e1;
+  line-height: 1.7;
+}
+
+.login {
+  background: rgba(10,15,25,.92);
+  border: 1px solid rgba(212,175,55,.45);
+  padding: 35px;
+  border-radius: 10px;
+  box-shadow: 0 0 60px rgba(0,0,0,.7);
+}
+
+.login h3 {
+  font-size: 24px;
+  margin-bottom: 15px;
+  letter-spacing: 2px;
+}
+
+.login p {
+  color: #94a3b8;
+  margin-bottom: 20px;
+}
+
+input {
+  width: 100%;
+  padding: 15px;
+  margin-bottom: 14px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #e8f0fe;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  background: #d4af37;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.stats {
+  max-width: 1200px;
+  margin: 70px auto 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.stat {
+  background: rgba(10,15,25,.9);
+  border: 1px solid rgba(212,175,55,.35);
+  padding: 25px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stat strong {
+  font-size: 34px;
+}
+
+.stat span {
+  display: block;
+  color: #d4af37;
+  font-size: 12px;
+  margin-top: 8px;
+  letter-spacing: 1px;
+}
+
+@media(max-width:900px) {
+  .main {
+    grid-template-columns: 1fr;
+    margin-top: 70px;
+  }
+
+  h1 {
+    font-size: 60px;
+  }
+
+  h2 {
+    font-size: 30px;
+  }
+
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
 
-    <section class="hero">
-        <div class="overlay"></div>
+<section class="hero">
 
-        <div class="hero-content">
-            <h1>LSPD VICE</h1>
-            <h2>Drug Enforcement Unit</h2>
+  <nav class="nav">
+    <div class="logo">
+      <div class="badge">LSPD</div>
+      <div>
+        <h3>VICE UNIT</h3>
+        <p>DRUG ENFORCEMENT DIVISION</p>
+      </div>
+    </div>
 
-            <p class="motto">
-                Disrupting Networks. Protecting San Andreas.
-            </p>
+    <div>
+      <a href="#">Public Stats</a>
+      <a class="gold" href="#login">Officer Login</a>
+    </div>
+  </nav>
 
-            <div class="login-card">
-                <h3>Officer Login</h3>
+  <div class="main">
+    <div>
+      <div class="kicker">LOS SANTOS POLICE DEPARTMENT · VICE UNIT</div>
+      <h1>LSPD<br>VICE</h1>
+      <h2>DRUG ENFORCEMENT UNIT</h2>
+      <p class="motto">DISRUPTING NETWORKS. PROTECTING SAN ANDREAS.</p>
+      <p class="desc">
+        Intelligence-led narcotics investigations targeting distribution networks,
+        trafficking organizations, and criminal supply chains across Los Santos
+        and the State of San Andreas.
+      </p>
+    </div>
 
-                <form id="loginForm">
-                    <input
-                        type="email"
-                        id="email"
-                        placeholder="Email Address"
-                        required
-                    >
+    <div class="login" id="login">
+      <h3>AUTHORIZED PERSONNEL ONLY</h3>
+      <p>Access is restricted to approved LSPD VICE personnel.</p>
 
-                    <input
-                        type="password"
-                        id="password"
-                        placeholder="Password"
-                        required
-                    >
+      <form id="loginForm">
+        <input id="email" type="email" placeholder="Email Address" required>
+        <input id="password" type="password" placeholder="Password" required>
+        <button type="submit">ACCESS PORTAL</button>
+      </form>
 
-                    <button type="submit">
-                        ACCESS PORTAL
-                    </button>
-                </form>
+      <p id="message"></p>
+    </div>
+  </div>
 
-                <p id="message"></p>
-            </div>
-        </div>
-    </section>
+  <div class="stats">
+    <div class="stat"><strong>12</strong><span>ACTIVE CASES</span></div>
+    <div class="stat"><strong>7</strong><span>SEARCH WARRANTS</span></div>
+    <div class="stat"><strong>34</strong><span>ARRESTS THIS MONTH</span></div>
+    <div class="stat"><strong>128 lbs</strong><span>NARCOTICS SEIZED</span></div>
+  </div>
 
-    <script src="./js/config.js"></script>
+</section>
 
-    <script>
-        const loginForm = document.getElementById("loginForm");
+<script>
+window.SUPABASE_URL = "https://twdgwnbvpuwjwbbjfack.supabase.co";
+window.SUPABASE_ANON_KEY = "sb_publishable_LzF2eh8Nvf8iGX0-5_izKw_7yuwV0Hw";
 
-        loginForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
+window.sb = supabase.createClient(
+  window.SUPABASE_URL,
+  window.SUPABASE_ANON_KEY
+);
 
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
+document.getElementById("loginForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
 
-            const { error } = await window.sb.auth.signInWithPassword({
-                email,
-                password
-            });
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-            if (error) {
-                document.getElementById("message").innerText = error.message;
-                return;
-            }
+  const { error } = await window.sb.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
 
-            window.location.href = "dashboard.html";
-        });
-    </script>
+  if (error) {
+    document.getElementById("message").innerText = error.message;
+    return;
+  }
+
+  window.location.href = "dashboard.html";
+});
+</script>
 
 </body>
 </html>
