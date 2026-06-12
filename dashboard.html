@@ -248,17 +248,166 @@ async function addCase() {
 
 loadCases();
 
-function addEvidence(){
-  addItem("evidenceList", `<strong>${evidenceItem.value || "Evidence Item"}</strong><small>Case: ${evidenceCase.value || "N/A"} · Officer: ${evidenceOfficer.value || "N/A"}</small><div class="status">${evidenceStatus.value}</div>`);
+async function loadEvidence() {
+  const { data, error } = await window.sb
+    .from("evidence")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  document.getElementById("evidenceList").innerHTML = "";
+
+  data.forEach(e => {
+    addItem("evidenceList", `
+      <strong>${e.item_name}</strong>
+      <small>Officer: ${e.submitting_officer || "N/A"}</small>
+      <div class="status">${e.status}</div>
+    `);
+  });
 }
 
-function addWarrant(){
-  addItem("warrantList", `<strong>${warrantTarget.value || "Unknown Target"}</strong><small>${warrantLocation.value || "Unknown Location"} · Officer: ${warrantOfficer.value || "N/A"}</small><div class="status warn">${warrantStatus.value}</div>`);
+async function addEvidence() {
+
+  const {
+    data: { user }
+  } = await window.sb.auth.getUser();
+
+  const { error } = await window.sb
+    .from("evidence")
+    .insert([
+      {
+        item_name: document.getElementById("evidenceItem").value,
+        submitting_officer: document.getElementById("evidenceOfficer").value,
+        status: document.getElementById("evidenceStatus").value,
+        created_by: user.id
+      }
+    ]);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  document.getElementById("evidenceItem").value = "";
+  document.getElementById("evidenceOfficer").value = "";
+
+  loadEvidence();
 }
 
-function addSeizure(){
-  addItem("seizureList", `<strong>${seizureItem.value || "Seized Item"}</strong><small>Qty: ${seizureQty.value || "N/A"} · Value: ${seizureValue.value || "N/A"} · ${seizureLocation.value || "Unknown Location"}</small><div class="status">LOGGED</div>`);
+loadEvidence();
+
+async function loadWarrants() {
+  const { data, error } = await window.sb
+    .from("warrants")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  document.getElementById("warrantList").innerHTML = "";
+
+  data.forEach(w => {
+    addItem("warrantList", `
+      <strong>${w.target_name}</strong>
+      <small>${w.location || "Unknown Location"} · Officer: ${w.requesting_officer || "N/A"}</small>
+      <div class="status warn">${w.status}</div>
+    `);
+  });
 }
+
+async function addWarrant() {
+
+  const {
+    data: { user }
+  } = await window.sb.auth.getUser();
+
+  const { error } = await window.sb
+    .from("warrants")
+    .insert([
+      {
+        target_name: document.getElementById("warrantTarget").value,
+        location: document.getElementById("warrantLocation").value,
+        requesting_officer: document.getElementById("warrantOfficer").value,
+        status: document.getElementById("warrantStatus").value,
+        created_by: user.id
+      }
+    ]);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  document.getElementById("warrantTarget").value = "";
+  document.getElementById("warrantLocation").value = "";
+  document.getElementById("warrantOfficer").value = "";
+
+  loadWarrants();
+}
+
+loadWarrants();
+
+async function loadSeizures() {
+  const { data, error } = await window.sb
+    .from("seizures")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  document.getElementById("seizureList").innerHTML = "";
+
+  data.forEach(s => {
+    addItem("seizureList", `
+      <strong>${s.item_name}</strong>
+      <small>Qty: ${s.quantity || "N/A"} · Value: ${s.estimated_value || "N/A"} · ${s.location || "Unknown Location"}</small>
+      <div class="status">LOGGED</div>
+    `);
+  });
+}
+
+async function addSeizure() {
+
+  const {
+    data: { user }
+  } = await window.sb.auth.getUser();
+
+  const { error } = await window.sb
+    .from("seizures")
+    .insert([
+      {
+        item_name: document.getElementById("seizureItem").value,
+        quantity: document.getElementById("seizureQty").value,
+        estimated_value: document.getElementById("seizureValue").value,
+        location: document.getElementById("seizureLocation").value,
+        created_by: user.id
+      }
+    ]);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  document.getElementById("seizureItem").value = "";
+  document.getElementById("seizureQty").value = "";
+  document.getElementById("seizureValue").value = "";
+  document.getElementById("seizureLocation").value = "";
+
+  loadSeizures();
+}
+
+loadSeizures();
 </script>
 
 </body>
