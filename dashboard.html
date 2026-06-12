@@ -1,2 +1,135 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Officer Dashboard — LSPD VICE</title><link rel="stylesheet" href="css/styles.css"></head><body>
-<header class="topbar"><a class="brand" href="index.html"><div class="badge">LSPD</div><div><strong>VICE OFFICER PORTAL</strong><span id="officerEmail">SECURE DASHBOARD</span></div></a><nav class="nav"><a href="index.html">Public Site</a><button id="logoutBtn" class="btn gold">Logout</button></nav></header><section class="dashboard-hero"><div class="wrap"><span class="kicker">AUTHORIZED ACCESS · INTERNAL USE ONLY</span><h1 style="font-size:62px">Operations<br>Dashboard</h1><p class="motto">Intelligence. Investigation. Enforcement.</p></div></section><main class="wrap"><section class="mini-grid"><div class="mini glass"><b>08</b><span>Active Investigations</span></div><div class="mini glass"><b>23</b><span>Arrests This Month</span></div><div class="mini glass"><b>152.7</b><span>Drugs Seized / lbs</span></div></section><section class="dash-grid"><div class="panel glass"><h3>Case Queue</h3><div class="row"><b>V-24-1097</b><div><strong>Operation White Powder</strong><br><small>Lead Detective: Det. R. Johnson</small></div><span class="tag">ACTIVE</span></div><div class="row"><b>V-24-1103</b><div><strong>Operation Green Line</strong><br><small>Surveillance package pending review</small></div><span class="tag">ACTIVE</span></div><div class="row"><b>V-24-1120</b><div><strong>Operation Nightfall</strong><br><small>Warrant request awaiting command approval</small></div><span class="tag">PENDING</span></div></div><div class="panel glass"><h3>Command Bulletins</h3><p class="copy">All sensitive operational details must remain inside approved channels. Public seizure records are automatically redacted.</p><p class="motto">Unit Status: Operational</p></div></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/auth.js"></script><script>document.addEventListener('DOMContentLoaded',async()=>{const {data}=await window.sb.auth.getSession();if(!data.session) location.href='index.html#login';});</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LSPD VICE | Officer Dashboard</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#05070c;color:#f4f4f4}
+.page{min-height:100vh;padding:30px;background:linear-gradient(rgba(3,7,18,.7),rgba(3,7,18,.95)),url("assets/vice-hero.png") center/cover fixed no-repeat}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:70px}
+.logo{display:flex;gap:12px;align-items:center}
+.badge{background:#d4af37;color:#000;padding:12px 18px;border-radius:6px;font-weight:900}
+.logo h3{letter-spacing:2px}
+.logo p{color:#d4af37;font-size:12px;letter-spacing:2px}
+.nav a,.nav button{color:#fff;background:#0b111c;border:1px solid #333;text-decoration:none;margin-left:10px;padding:12px 18px;border-radius:6px;font-weight:700;cursor:pointer}
+.nav button{background:#d4af37;color:#000}
+.wrap{max-width:1250px;margin:0 auto}
+.kicker{color:#d4af37;letter-spacing:3px;font-size:12px;margin-bottom:18px}
+h1{font-size:64px;line-height:.95;margin-bottom:20px}
+.motto{font-weight:900;letter-spacing:2px;color:#d4af37;margin-bottom:35px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:28px}
+.card,.panel{background:rgba(10,15,25,.92);border:1px solid rgba(212,175,55,.35);border-radius:10px;padding:24px;box-shadow:0 0 40px rgba(0,0,0,.45)}
+.card strong{font-size:34px;display:block}
+.card span{color:#d4af37;font-size:12px;letter-spacing:1px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.panel h2{font-size:20px;letter-spacing:2px;margin-bottom:18px}
+.case,.bulletin{border-top:1px solid #1f2937;padding:15px 0}
+.case strong,.bulletin strong{display:block}
+.case small,.bulletin small{color:#94a3b8}
+.status{color:#4ade80;font-weight:900;font-size:12px;margin-top:5px}
+.warn{color:#facc15}
+.footer{margin-top:25px;color:#94a3b8}
+@media(max-width:900px){.stats,.grid{grid-template-columns:1fr}h1{font-size:46px}.nav{display:block}.nav div:last-child{margin-top:20px}}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+<div class="page">
+
+<nav class="nav">
+  <div class="logo">
+    <div class="badge">LSPD</div>
+    <div>
+      <h3>VICE OFFICER PORTAL</h3>
+      <p>DRUG ENFORCEMENT DIVISION</p>
+    </div>
+  </div>
+
+  <div>
+    <a href="index.html">Public Site</a>
+    <button id="logoutBtn">Logout</button>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="kicker">AUTHORIZED ACCESS · INTERNAL USE ONLY</div>
+
+  <h1>Operations<br>Dashboard</h1>
+  <p class="motto">INTELLIGENCE. INVESTIGATION. ENFORCEMENT.</p>
+
+  <section class="stats">
+    <div class="card"><strong>08</strong><span>ACTIVE INVESTIGATIONS</span></div>
+    <div class="card"><strong>23</strong><span>ARRESTS THIS MONTH</span></div>
+    <div class="card"><strong>152.7 lbs</strong><span>NARCOTICS SEIZED</span></div>
+    <div class="card"><strong>$2.47M</strong><span>EST. STREET VALUE</span></div>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <h2>CASE QUEUE</h2>
+
+      <div class="case">
+        <strong>V-24-1097 · Operation White Powder</strong>
+        <small>Lead Detective: Det. R. Johnson</small>
+        <div class="status">ACTIVE</div>
+      </div>
+
+      <div class="case">
+        <strong>V-24-1103 · Operation Green Line</strong>
+        <small>Surveillance package pending review</small>
+        <div class="status">ACTIVE</div>
+      </div>
+
+      <div class="case">
+        <strong>V-24-1120 · Operation Nightfall</strong>
+        <small>Warrant request awaiting command approval</small>
+        <div class="status warn">PENDING</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>COMMAND BULLETINS</h2>
+
+      <div class="bulletin">
+        <strong>Vinewood Hills Distribution Network Disrupted</strong>
+        <small>Multiple arrests and seizure of cocaine, cash, and firearms.</small>
+        <div class="status">FILED</div>
+      </div>
+
+      <div class="bulletin">
+        <strong>East Los Santos Corridor Under Investigation</strong>
+        <small>Increased trafficking activity reported near industrial routes.</small>
+        <div class="status warn">MONITORING</div>
+      </div>
+
+      <div class="bulletin">
+        <strong>San Fierro Route Identified</strong>
+        <small>Intelligence suggests new commercial freight movement.</small>
+        <div class="status">ACTIVE INTEL</div>
+      </div>
+    </div>
+  </section>
+
+  <p class="footer">Unit Status: Operational · Sensitive operational details must remain inside approved channels.</p>
+</main>
+
+</div>
+
+<script>
+window.SUPABASE_URL = "https://twdgwnbvpuwjwbbjfack.supabase.co";
+window.SUPABASE_ANON_KEY = "sb_publishable_LzF2eh8Nvf8iGX0-5_izKw_7yuwV0Hw";
+window.sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+document.getElementById("logoutBtn").addEventListener("click", async function(){
+  await window.sb.auth.signOut();
+  window.location.href = "index.html";
+});
+</script>
+
+</body>
+</html>
