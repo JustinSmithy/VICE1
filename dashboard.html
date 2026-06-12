@@ -8,31 +8,39 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Arial,sans-serif;background:#05070c;color:#f4f4f4}
-.page{min-height:100vh;padding:30px;background:linear-gradient(rgba(3,7,18,.7),rgba(3,7,18,.95)),url("assets/vice-hero.png") center/cover fixed no-repeat}
-.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:70px}
+.page{min-height:100vh;padding:30px;background:linear-gradient(rgba(3,7,18,.72),rgba(3,7,18,.96)),url("assets/vice-hero.png") center/cover fixed no-repeat}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:50px}
 .logo{display:flex;gap:12px;align-items:center}
 .badge{background:#d4af37;color:#000;padding:12px 18px;border-radius:6px;font-weight:900}
-.logo h3{letter-spacing:2px}
-.logo p{color:#d4af37;font-size:12px;letter-spacing:2px}
+.logo h3{letter-spacing:2px}.logo p{color:#d4af37;font-size:12px;letter-spacing:2px}
 .nav a,.nav button{color:#fff;background:#0b111c;border:1px solid #333;text-decoration:none;margin-left:10px;padding:12px 18px;border-radius:6px;font-weight:700;cursor:pointer}
 .nav button{background:#d4af37;color:#000}
-.wrap{max-width:1250px;margin:0 auto}
-.kicker{color:#d4af37;letter-spacing:3px;font-size:12px;margin-bottom:18px}
-h1{font-size:64px;line-height:.95;margin-bottom:20px}
-.motto{font-weight:900;letter-spacing:2px;color:#d4af37;margin-bottom:35px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:28px}
-.card,.panel{background:rgba(10,15,25,.92);border:1px solid rgba(212,175,55,.35);border-radius:10px;padding:24px;box-shadow:0 0 40px rgba(0,0,0,.45)}
-.card strong{font-size:34px;display:block}
-.card span{color:#d4af37;font-size:12px;letter-spacing:1px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
-.panel h2{font-size:20px;letter-spacing:2px;margin-bottom:18px}
-.case,.bulletin{border-top:1px solid #1f2937;padding:15px 0}
-.case strong,.bulletin strong{display:block}
-.case small,.bulletin small{color:#94a3b8}
-.status{color:#4ade80;font-weight:900;font-size:12px;margin-top:5px}
-.warn{color:#facc15}
+.wrap{max-width:1300px;margin:0 auto}
+.kicker{color:#d4af37;letter-spacing:3px;font-size:12px;margin-bottom:14px}
+h1{font-size:58px;line-height:.95;margin-bottom:15px}
+.motto{font-weight:900;letter-spacing:2px;color:#d4af37;margin-bottom:30px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:22px}
+.card,.panel,.tabbtn{background:rgba(10,15,25,.92);border:1px solid rgba(212,175,55,.35);border-radius:10px;box-shadow:0 0 35px rgba(0,0,0,.35)}
+.card{padding:24px;text-align:center}
+.card strong{font-size:34px;display:block}.card span{color:#d4af37;font-size:12px;letter-spacing:1px}
+.tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:25px 0}
+.tabbtn{padding:18px;color:#fff;font-weight:900;letter-spacing:1px;cursor:pointer}
+.tabbtn.active{background:#d4af37;color:#000}
+.panel{display:none;padding:26px}
+.panel.active{display:block}
+.panel h2{font-size:22px;letter-spacing:2px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.item{border-top:1px solid #1f2937;padding:15px 0}
+.item strong{display:block}.item small{color:#94a3b8}
+.status{display:inline-block;margin-top:8px;color:#4ade80;font-weight:900;font-size:12px}
+.warn{color:#facc15}.red{color:#fb7185}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+input,select,textarea{width:100%;padding:13px;border-radius:6px;border:1px solid #334155;background:#e8f0fe;color:#000}
+textarea{grid-column:1/-1;min-height:90px}
+.goldbtn{background:#d4af37;color:#000;border:0;border-radius:6px;padding:13px;font-weight:900;cursor:pointer}
+.list{margin-top:15px}
 .footer{margin-top:25px;color:#94a3b8}
-@media(max-width:900px){.stats,.grid{grid-template-columns:1fr}h1{font-size:46px}.nav{display:block}.nav div:last-child{margin-top:20px}}
+@media(max-width:900px){.stats,.tabs,.grid,.form{grid-template-columns:1fr}h1{font-size:42px}.nav{display:block}.nav div:last-child{margin-top:15px}}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -49,7 +57,6 @@ h1{font-size:64px;line-height:.95;margin-bottom:20px}
       <p>DRUG ENFORCEMENT DIVISION</p>
     </div>
   </div>
-
   <div>
     <a href="index.html">Public Site</a>
     <button id="logoutBtn">Logout</button>
@@ -58,7 +65,6 @@ h1{font-size:64px;line-height:.95;margin-bottom:20px}
 
 <main class="wrap">
   <div class="kicker">AUTHORIZED ACCESS · INTERNAL USE ONLY</div>
-
   <h1>Operations<br>Dashboard</h1>
   <p class="motto">INTELLIGENCE. INVESTIGATION. ENFORCEMENT.</p>
 
@@ -69,50 +75,92 @@ h1{font-size:64px;line-height:.95;margin-bottom:20px}
     <div class="card"><strong>$2.47M</strong><span>EST. STREET VALUE</span></div>
   </section>
 
-  <section class="grid">
-    <div class="panel">
-      <h2>CASE QUEUE</h2>
+  <section class="tabs">
+    <button class="tabbtn active" onclick="openTab('cases', this)">Cases</button>
+    <button class="tabbtn" onclick="openTab('evidence', this)">Evidence</button>
+    <button class="tabbtn" onclick="openTab('warrants', this)">Warrants</button>
+    <button class="tabbtn" onclick="openTab('seizures', this)">Seizures</button>
+    <button class="tabbtn" onclick="openTab('roster', this)">Roster</button>
+    <button class="tabbtn" onclick="openTab('bulletins', this)">Bulletins</button>
+  </section>
 
-      <div class="case">
-        <strong>V-24-1097 · Operation White Powder</strong>
-        <small>Lead Detective: Det. R. Johnson</small>
-        <div class="status">ACTIVE</div>
-      </div>
-
-      <div class="case">
-        <strong>V-24-1103 · Operation Green Line</strong>
-        <small>Surveillance package pending review</small>
-        <div class="status">ACTIVE</div>
-      </div>
-
-      <div class="case">
-        <strong>V-24-1120 · Operation Nightfall</strong>
-        <small>Warrant request awaiting command approval</small>
-        <div class="status warn">PENDING</div>
-      </div>
+  <section id="cases" class="panel active">
+    <h2>CASE MANAGEMENT</h2>
+    <div class="form">
+      <input id="caseName" placeholder="Case Name">
+      <input id="caseLead" placeholder="Lead Officer">
+      <select id="caseStatus">
+        <option>ACTIVE</option>
+        <option>PENDING</option>
+        <option>CLOSED</option>
+      </select>
+      <input id="caseLocation" placeholder="Location">
+      <textarea id="caseNotes" placeholder="Case Notes"></textarea>
+      <button class="goldbtn" onclick="addCase()">ADD CASE</button>
     </div>
+    <div id="caseList" class="list"></div>
+  </section>
 
-    <div class="panel">
-      <h2>COMMAND BULLETINS</h2>
-
-      <div class="bulletin">
-        <strong>Vinewood Hills Distribution Network Disrupted</strong>
-        <small>Multiple arrests and seizure of cocaine, cash, and firearms.</small>
-        <div class="status">FILED</div>
-      </div>
-
-      <div class="bulletin">
-        <strong>East Los Santos Corridor Under Investigation</strong>
-        <small>Increased trafficking activity reported near industrial routes.</small>
-        <div class="status warn">MONITORING</div>
-      </div>
-
-      <div class="bulletin">
-        <strong>San Fierro Route Identified</strong>
-        <small>Intelligence suggests new commercial freight movement.</small>
-        <div class="status">ACTIVE INTEL</div>
-      </div>
+  <section id="evidence" class="panel">
+    <h2>EVIDENCE LOCKER</h2>
+    <div class="form">
+      <input id="evidenceItem" placeholder="Evidence Item">
+      <input id="evidenceCase" placeholder="Linked Case ID">
+      <input id="evidenceOfficer" placeholder="Submitting Officer">
+      <select id="evidenceStatus">
+        <option>LOGGED</option>
+        <option>PROCESSING</option>
+        <option>STORED</option>
+      </select>
+      <button class="goldbtn" onclick="addEvidence()">LOG EVIDENCE</button>
     </div>
+    <div id="evidenceList" class="list"></div>
+  </section>
+
+  <section id="warrants" class="panel">
+    <h2>WARRANT TRACKER</h2>
+    <div class="form">
+      <input id="warrantTarget" placeholder="Target Name">
+      <input id="warrantLocation" placeholder="Target Location">
+      <select id="warrantStatus">
+        <option>DRAFT</option>
+        <option>PENDING COMMAND</option>
+        <option>APPROVED</option>
+        <option>SERVED</option>
+      </select>
+      <input id="warrantOfficer" placeholder="Requesting Officer">
+      <button class="goldbtn" onclick="addWarrant()">ADD WARRANT</button>
+    </div>
+    <div id="warrantList" class="list"></div>
+  </section>
+
+  <section id="seizures" class="panel">
+    <h2>SEIZURE LOGS</h2>
+    <div class="form">
+      <input id="seizureItem" placeholder="Seized Item">
+      <input id="seizureQty" placeholder="Quantity">
+      <input id="seizureValue" placeholder="Estimated Value">
+      <input id="seizureLocation" placeholder="Location">
+      <button class="goldbtn" onclick="addSeizure()">ADD SEIZURE</button>
+    </div>
+    <div id="seizureList" class="list"></div>
+  </section>
+
+  <section id="roster" class="panel">
+    <h2>OFFICER ROSTER</h2>
+    <div class="grid">
+      <div class="item"><strong>Det. R. Johnson</strong><small>VICE Command · Case Supervisor</small><div class="status">ACTIVE</div></div>
+      <div class="item"><strong>Det. M. Hayes</strong><small>Undercover Operations</small><div class="status">ACTIVE</div></div>
+      <div class="item"><strong>Ofc. D. Carter</strong><small>Evidence & Seizure Processing</small><div class="status warn">FIELD ASSIGNED</div></div>
+      <div class="item"><strong>Sgt. A. Moreno</strong><small>Warrant Review</small><div class="status">ACTIVE</div></div>
+    </div>
+  </section>
+
+  <section id="bulletins" class="panel">
+    <h2>COMMAND BULLETINS</h2>
+    <div class="item"><strong>Vinewood Hills Distribution Network Disrupted</strong><small>Multiple arrests and seizure of cocaine, cash, and firearms.</small><div class="status">FILED</div></div>
+    <div class="item"><strong>East Los Santos Corridor Under Investigation</strong><small>Increased trafficking activity near industrial routes.</small><div class="status warn">MONITORING</div></div>
+    <div class="item"><strong>San Fierro Route Identified</strong><small>New commercial freight movement suspected.</small><div class="status">ACTIVE INTEL</div></div>
   </section>
 
   <p class="footer">Unit Status: Operational · Sensitive operational details must remain inside approved channels.</p>
@@ -129,6 +177,36 @@ document.getElementById("logoutBtn").addEventListener("click", async function(){
   await window.sb.auth.signOut();
   window.location.href = "index.html";
 });
+
+function openTab(id, btn){
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  btn.classList.add("active");
+}
+
+function addItem(listId, html){
+  const box = document.createElement("div");
+  box.className = "item";
+  box.innerHTML = html;
+  document.getElementById(listId).prepend(box);
+}
+
+function addCase(){
+  addItem("caseList", `<strong>${caseName.value || "Unnamed Case"}</strong><small>Lead: ${caseLead.value || "Unassigned"} · ${caseLocation.value || "Unknown Location"}</small><div class="status">${caseStatus.value}</div><small>${caseNotes.value || ""}</small>`);
+}
+
+function addEvidence(){
+  addItem("evidenceList", `<strong>${evidenceItem.value || "Evidence Item"}</strong><small>Case: ${evidenceCase.value || "N/A"} · Officer: ${evidenceOfficer.value || "N/A"}</small><div class="status">${evidenceStatus.value}</div>`);
+}
+
+function addWarrant(){
+  addItem("warrantList", `<strong>${warrantTarget.value || "Unknown Target"}</strong><small>${warrantLocation.value || "Unknown Location"} · Officer: ${warrantOfficer.value || "N/A"}</small><div class="status warn">${warrantStatus.value}</div>`);
+}
+
+function addSeizure(){
+  addItem("seizureList", `<strong>${seizureItem.value || "Seized Item"}</strong><small>Qty: ${seizureQty.value || "N/A"} · Value: ${seizureValue.value || "N/A"} · ${seizureLocation.value || "Unknown Location"}</small><div class="status">LOGGED</div>`);
+}
 </script>
 
 </body>
