@@ -6,7 +6,7 @@
             rgba(3,7,18,0.45),
             rgba(3,7,18,0.70)
         ),
-        url('../assets/vice-hero.png');
+        url('assets/vice-hero.png');
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
