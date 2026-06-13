@@ -23,7 +23,7 @@ h1{font-size:58px;line-height:.95;margin-bottom:15px}
 .card,.panel,.tabbtn{background:rgba(10,15,25,.92);border:1px solid rgba(212,175,55,.35);border-radius:10px;box-shadow:0 0 35px rgba(0,0,0,.35)}
 .card{padding:24px;text-align:center}
 .card strong{font-size:34px;display:block}.card span{color:#d4af37;font-size:12px;letter-spacing:1px}
-.tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:25px 0}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:25px 0}
 .tabbtn{padding:18px;color:#fff;font-weight:900;letter-spacing:1px;cursor:pointer}
 .tabbtn.active{background:#d4af37;color:#000}
 .panel{display:none;padding:26px}
@@ -78,7 +78,6 @@ textarea{grid-column:1/-1;min-height:90px}
   <section class="tabs">
     <button class="tabbtn active" onclick="openTab('cases', this)">Cases</button>
     <button class="tabbtn" onclick="openTab('evidence', this)">Evidence</button>
-    <button class="tabbtn" onclick="openTab('warrants', this)">Warrants</button>
     <button class="tabbtn" onclick="openTab('seizures', this)">Seizures</button>
     <button class="tabbtn" onclick="openTab('roster', this)">Roster</button>
     <button class="tabbtn" onclick="openTab('bulletins', this)">Bulletins</button>
@@ -117,23 +116,6 @@ textarea{grid-column:1/-1;min-height:90px}
     <div id="evidenceList" class="list"></div>
   </section>
 
-  <section id="warrants" class="panel">
-    <h2>WARRANT TRACKER</h2>
-    <div class="form">
-      <input id="warrantTarget" placeholder="Target Name">
-      <input id="warrantLocation" placeholder="Target Location">
-      <select id="warrantStatus">
-        <option>DRAFT</option>
-        <option>PENDING COMMAND</option>
-        <option>APPROVED</option>
-        <option>SERVED</option>
-      </select>
-      <input id="warrantOfficer" placeholder="Requesting Officer">
-      <button class="goldbtn" onclick="addWarrant()">ADD WARRANT</button>
-    </div>
-    <div id="warrantList" class="list"></div>
-  </section>
-
   <section id="seizures" class="panel">
     <h2>SEIZURE LOGS</h2>
     <div class="form">
@@ -152,7 +134,7 @@ textarea{grid-column:1/-1;min-height:90px}
       <div class="item"><strong>Det. R. Johnson</strong><small>VICE Command · Case Supervisor</small><div class="status">ACTIVE</div></div>
       <div class="item"><strong>Det. M. Hayes</strong><small>Undercover Operations</small><div class="status">ACTIVE</div></div>
       <div class="item"><strong>Ofc. D. Carter</strong><small>Evidence & Seizure Processing</small><div class="status warn">FIELD ASSIGNED</div></div>
-      <div class="item"><strong>Sgt. A. Moreno</strong><small>Warrant Review</small><div class="status">ACTIVE</div></div>
+      <div class="item"><strong>Sgt. A. Moreno</strong><small>VICE Intelligence Review</small><div class="status">ACTIVE</div></div>
     </div>
   </section>
 
@@ -246,8 +228,6 @@ async function addCase() {
   loadCases();
 }
 
-loadCases();
-
 async function loadEvidence() {
   const { data, error } = await window.sb
     .from("evidence")
@@ -271,7 +251,6 @@ async function loadEvidence() {
 }
 
 async function addEvidence() {
-
   const {
     data: { user }
   } = await window.sb.auth.getUser();
@@ -298,62 +277,6 @@ async function addEvidence() {
   loadEvidence();
 }
 
-loadEvidence();
-
-async function loadWarrants() {
-  const { data, error } = await window.sb
-    .from("warrants")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  document.getElementById("warrantList").innerHTML = "";
-
-  data.forEach(w => {
-    addItem("warrantList", `
-      <strong>${w.target_name}</strong>
-      <small>${w.location || "Unknown Location"} · Officer: ${w.requesting_officer || "N/A"}</small>
-      <div class="status warn">${w.status}</div>
-    `);
-  });
-}
-
-async function addWarrant() {
-
-  const {
-    data: { user }
-  } = await window.sb.auth.getUser();
-
-  const { error } = await window.sb
-    .from("warrants")
-    .insert([
-      {
-        target_name: document.getElementById("warrantTarget").value,
-        location: document.getElementById("warrantLocation").value,
-        requesting_officer: document.getElementById("warrantOfficer").value,
-        status: document.getElementById("warrantStatus").value,
-        created_by: user.id
-      }
-    ]);
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  document.getElementById("warrantTarget").value = "";
-  document.getElementById("warrantLocation").value = "";
-  document.getElementById("warrantOfficer").value = "";
-
-  loadWarrants();
-}
-
-loadWarrants();
-
 async function loadSeizures() {
   const { data, error } = await window.sb
     .from("seizures")
@@ -377,7 +300,6 @@ async function loadSeizures() {
 }
 
 async function addSeizure() {
-
   const {
     data: { user }
   } = await window.sb.auth.getUser();
@@ -407,7 +329,6 @@ async function addSeizure() {
   loadSeizures();
 }
 
-loadSeizures();
 loadCases();
 loadEvidence();
 loadSeizures();
