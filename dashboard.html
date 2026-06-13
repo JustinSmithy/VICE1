@@ -33,7 +33,7 @@ h1{font-size:58px;line-height:.95;margin-bottom:15px}
 .item{border-top:1px solid #1f2937;padding:15px 0}
 .item strong{display:block}.item small{color:#94a3b8}
 .status{display:inline-block;margin-top:8px;color:#4ade80;font-weight:900;font-size:12px}
-.warn{color:#facc15}.red{color:#fb7185}
+.warn{color:#facc15}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
 input,select,textarea{width:100%;padding:13px;border-radius:6px;border:1px solid #334155;background:#e8f0fe;color:#000}
 textarea{grid-column:1/-1;min-height:90px}
@@ -69,10 +69,10 @@ textarea{grid-column:1/-1;min-height:90px}
   <p class="motto">INTELLIGENCE. INVESTIGATION. ENFORCEMENT.</p>
 
   <section class="stats">
-    <div class="card"><strong>08</strong><span>ACTIVE INVESTIGATIONS</span></div>
-    <div class="card"><strong>23</strong><span>ARRESTS THIS MONTH</span></div>
-    <div class="card"><strong>152.7 lbs</strong><span>NARCOTICS SEIZED</span></div>
-    <div class="card"><strong>$2.47M</strong><span>EST. STREET VALUE</span></div>
+    <div class="card"><strong id="activeCasesStat">0</strong><span>ACTIVE INVESTIGATIONS</span></div>
+    <div class="card"><strong id="arrestsStat">0</strong><span>ARRESTS THIS MONTH</span></div>
+    <div class="card"><strong id="narcoticsStat">0</strong><span>NARCOTICS SEIZED</span></div>
+    <div class="card"><strong id="streetValueStat">$0</strong><span>EST. STREET VALUE</span></div>
   </section>
 
   <section class="tabs">
@@ -147,7 +147,6 @@ textarea{grid-column:1/-1;min-height:90px}
 
   <p class="footer">Unit Status: Operational · Sensitive operational details must remain inside approved channels.</p>
 </main>
-
 </div>
 
 <script>
@@ -174,6 +173,24 @@ function addItem(listId, html){
   document.getElementById(listId).prepend(box);
 }
 
+async function loadStats() {
+  const { data: cases } = await window.sb.from("cases").select("*");
+  const { data: seizures } = await window.sb.from("seizures").select("*");
+
+  const activeCases = (cases || []).filter(c => c.status === "ACTIVE").length;
+
+  let totalValue = 0;
+  (seizures || []).forEach(s => {
+    const value = String(s.estimated_value || "").replace(/[^0-9.]/g, "");
+    totalValue += Number(value || 0);
+  });
+
+  document.getElementById("activeCasesStat").innerText = activeCases;
+  document.getElementById("arrestsStat").innerText = "0";
+  document.getElementById("narcoticsStat").innerText = (seizures || []).length;
+  document.getElementById("streetValueStat").innerText = "$" + totalValue.toLocaleString();
+}
+
 async function loadCases() {
   const { data, error } = await window.sb
     .from("cases")
@@ -198,22 +215,16 @@ async function loadCases() {
 }
 
 async function addCase() {
-  const {
-    data: { user }
-  } = await window.sb.auth.getUser();
+  const { data: { user } } = await window.sb.auth.getUser();
 
-  const { error } = await window.sb
-    .from("cases")
-    .insert([
-      {
-        case_name: document.getElementById("caseName").value,
-        lead_officer: document.getElementById("caseLead").value,
-        location: document.getElementById("caseLocation").value,
-        status: document.getElementById("caseStatus").value,
-        notes: document.getElementById("caseNotes").value,
-        created_by: user.id
-      }
-    ]);
+  const { error } = await window.sb.from("cases").insert([{
+    case_name: document.getElementById("caseName").value,
+    lead_officer: document.getElementById("caseLead").value,
+    location: document.getElementById("caseLocation").value,
+    status: document.getElementById("caseStatus").value,
+    notes: document.getElementById("caseNotes").value,
+    created_by: user.id
+  }]);
 
   if (error) {
     alert(error.message);
@@ -226,6 +237,7 @@ async function addCase() {
   document.getElementById("caseNotes").value = "";
 
   loadCases();
+  loadStats();
 }
 
 async function loadEvidence() {
@@ -251,20 +263,14 @@ async function loadEvidence() {
 }
 
 async function addEvidence() {
-  const {
-    data: { user }
-  } = await window.sb.auth.getUser();
+  const { data: { user } } = await window.sb.auth.getUser();
 
-  const { error } = await window.sb
-    .from("evidence")
-    .insert([
-      {
-        item_name: document.getElementById("evidenceItem").value,
-        submitting_officer: document.getElementById("evidenceOfficer").value,
-        status: document.getElementById("evidenceStatus").value,
-        created_by: user.id
-      }
-    ]);
+  const { error } = await window.sb.from("evidence").insert([{
+    item_name: document.getElementById("evidenceItem").value,
+    submitting_officer: document.getElementById("evidenceOfficer").value,
+    status: document.getElementById("evidenceStatus").value,
+    created_by: user.id
+  }]);
 
   if (error) {
     alert(error.message);
@@ -300,21 +306,15 @@ async function loadSeizures() {
 }
 
 async function addSeizure() {
-  const {
-    data: { user }
-  } = await window.sb.auth.getUser();
+  const { data: { user } } = await window.sb.auth.getUser();
 
-  const { error } = await window.sb
-    .from("seizures")
-    .insert([
-      {
-        item_name: document.getElementById("seizureItem").value,
-        quantity: document.getElementById("seizureQty").value,
-        estimated_value: document.getElementById("seizureValue").value,
-        location: document.getElementById("seizureLocation").value,
-        created_by: user.id
-      }
-    ]);
+  const { error } = await window.sb.from("seizures").insert([{
+    item_name: document.getElementById("seizureItem").value,
+    quantity: document.getElementById("seizureQty").value,
+    estimated_value: document.getElementById("seizureValue").value,
+    location: document.getElementById("seizureLocation").value,
+    created_by: user.id
+  }]);
 
   if (error) {
     alert(error.message);
@@ -327,11 +327,13 @@ async function addSeizure() {
   document.getElementById("seizureLocation").value = "";
 
   loadSeizures();
+  loadStats();
 }
 
 loadCases();
 loadEvidence();
 loadSeizures();
+loadStats();
 </script>
 </body>
 </html>
