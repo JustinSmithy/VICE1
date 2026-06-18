@@ -2,296 +2,2625 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LSPD VICE | Drug Enforcement Unit</title>
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LSPD Vice Unit — Drug Enforcement Division</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0c0f;color:#e8eaf0;min-height:100vh}
+.pfbg{position:fixed;inset:0;z-index:-1;background-size:cover;background-position:center;pointer-events:none;display:none}
+.pfbg::after{content:'';position:fixed;inset:0;background:rgba(10,12,15,.65);z-index:-1;pointer-events:none}
+:root{
+  --gold:#c9a84c;--gold-l:#e8c96a;
+  --navy:#0d1117;--navy-m:#161b24;--navy-l:#1e2535;
+  --border:rgba(201,168,76,0.2);--border-d:rgba(255,255,255,0.07);
+  --tp:#e8eaf0;--ts:#8b92a8;
+  --red:#d64545;--green:#3db87a
 }
+body>nav{position:sticky;top:0;z-index:100;background:rgba(10,12,15,.97);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px}
+.nb{display:flex;align-items:center;gap:12px}
+.nb-badge{background:var(--gold);color:#0a0c0f;font-size:9px;font-weight:700;letter-spacing:2px;padding:3px 8px;border-radius:2px;text-transform:uppercase}
+.nb-title{font-size:15px;font-weight:600}
+.nb-sub{font-size:11px;color:var(--gold);letter-spacing:1px;text-transform:uppercase}
+.nl{display:flex;gap:8px;align-items:center}
+.btn{background:none;border:1px solid var(--border);color:var(--ts);padding:7px 16px;border-radius:4px;cursor:pointer;font-size:13px;transition:all .2s}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:#0a0c0f;font-weight:600}
+.btn.danger{border-color:rgba(214,69,69,.3);color:#f08080}
+.btn.danger:hover{background:rgba(214,69,69,.1)}
+.btn.success{border-color:rgba(76,175,130,.4);color:#4caf82;background:rgba(76,175,130,.1)}
 
-body {
-  font-family: Arial, sans-serif;
-  background: #05070c;
-  color: #f4f4f4;
-}
+/* pages */
+.page{display:none}
+.page.active{display:block}
+#pg-dash{display:none}
+#pg-dash.active{display:flex;flex-direction:column;min-height:100vh}
 
-.hero {
-  min-height: 100vh;
-  background:
-    linear-gradient(rgba(3,7,18,.45), rgba(3,7,18,.85)),
-    url("assets/vice-hero.png") center/cover no-repeat;
-  padding: 30px;
-}
+/* hero */
+.hero{min-height:500px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem 3rem;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(201,168,76,.1) 0%,transparent 70%);pointer-events:none}
+.hero>*{position:relative;z-index:1}
+.hero-eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem;border:1px solid var(--border);padding:5px 16px;border-radius:20px;display:inline-block;background:rgba(10,12,15,.5)}
+.hero h1{font-size:clamp(2rem,5vw,3.5rem);font-weight:700;line-height:1.1;margin-bottom:1rem}
+.hero h1 span{color:var(--gold)}
+.hero p{font-size:16px;color:#c8cad4;max-width:540px;line-height:1.7;margin-bottom:2.5rem}
+.hero-strip{display:flex;gap:1px;background:var(--border);border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.hs{background:rgba(22,27,36,.92);padding:1.2rem 2.5rem;text-align:center;backdrop-filter:blur(4px)}
+.hs-num{font-size:28px;font-weight:700;color:var(--gold)}
+.hs-lbl{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ts);margin-top:3px}
 
-.nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+/* sections */
+.sec{padding:3rem 2rem;max-width:1100px;margin:0 auto}
+.sec-hd{margin-bottom:2rem}
+.sec-hd h2{font-size:22px;font-weight:600}
+.sec-hd p{font-size:14px;color:var(--ts);margin-top:4px}
+.tag{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.divider{height:1px;background:var(--border-d);margin:0 2rem}
 
-.logo {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
+/* stat cards */
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border-d);border-radius:8px;overflow:hidden;border:1px solid var(--border-d);margin-bottom:2rem}
+.sc{background:var(--navy-m);padding:1.5rem}
+.sc-lbl{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ts);margin-bottom:8px}
+.sc-val{font-size:26px;font-weight:700}
+.sc-val.gold{color:var(--gold)}
+.sc-val.red{color:#f08080}
+.sc-val.green{color:#6adba0}
 
-.badge {
-  background: #d4af37;
-  color: #000;
-  padding: 12px 18px;
-  border-radius: 6px;
-  font-weight: 900;
-}
+/* table */
+.tbl-wrap{background:var(--navy-m);border:1px solid var(--border-d);border-radius:8px;overflow:hidden}
+.tbl-head{padding:1rem 1.5rem;border-bottom:1px solid var(--border-d);display:flex;align-items:center;justify-content:space-between}
+.tbl-head h3{font-size:14px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:10px 16px;text-align:left;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid var(--border-d);font-weight:500}
+td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.td-val{color:var(--gold);font-weight:600}
 
-.logo h3 {
-  letter-spacing: 2px;
-}
+/* badges */
+.badge{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:3px}
+.bg-gold{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid var(--border)}
+.bg-red{background:rgba(214,69,69,.15);color:#f08080;border:1px solid rgba(214,69,69,.3)}
+.bg-green{background:rgba(61,184,122,.15);color:#6adba0;border:1px solid rgba(61,184,122,.3)}
+.bg-blue{background:rgba(74,158,255,.15);color:#7ab8ff;border:1px solid rgba(74,158,255,.3)}
 
-.logo p {
-  color: #d4af37;
-  font-size: 12px;
-  letter-spacing: 2px;
-}
+/* forms */
+.fgrp{margin-bottom:1.25rem}
+.flbl{display:block;font-size:12px;letter-spacing:.5px;color:var(--ts);margin-bottom:6px;text-transform:uppercase}
+input.fi,select.fi,textarea.fi{width:100%;background:var(--navy);border:1px solid var(--border-d);border-radius:6px;padding:10px 14px;color:var(--tp);font-size:14px;transition:border-color .2s;outline:none;font-family:inherit}
+input.fi:focus,select.fi:focus,textarea.fi:focus{border-color:var(--gold)}
+input.fi::placeholder,textarea.fi::placeholder{color:#444a5e}
+textarea.fi{resize:vertical;min-height:80px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.sbtn{width:100%;padding:11px;border-radius:6px;border:none;cursor:pointer;font-size:14px;font-weight:600;letter-spacing:.5px;background:var(--gold);color:#0a0c0f;margin-top:4px}
+.sbtn:hover{background:var(--gold-l)}
+.sbtn:disabled{opacity:.5;cursor:not-allowed}
 
-.nav a {
-  color: #fff;
-  text-decoration: none;
-  margin-left: 15px;
-  padding: 12px 18px;
-  border-radius: 6px;
-  border: 1px solid #333;
-  font-weight: 700;
-}
+/* msg */
+.msg{padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:1rem}
+.msg-err{background:rgba(214,69,69,.1);border:1px solid rgba(214,69,69,.3);color:#f08080}
+.msg-ok{background:rgba(61,184,122,.1);border:1px solid rgba(61,184,122,.3);color:#6adba0}
 
-.nav .gold {
-  background: #d4af37;
-  color: #000;
-}
+/* auth */
+.auth-wrap{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:2rem}
+.auth-card{background:var(--navy-m);border:1px solid var(--border);border-radius:12px;padding:2.5rem;width:100%;max-width:400px}
+.auth-logo{text-align:center;margin-bottom:2rem}
+.auth-logo .sh{font-size:48px;margin-bottom:8px}
+.auth-logo h2{font-size:18px;font-weight:600;color:var(--gold)}
+.auth-logo p{font-size:12px;color:var(--ts);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+.auth-tabs{display:flex;margin-bottom:2rem;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.auth-tab{flex:1;padding:9px;background:transparent;border:none;color:var(--ts);cursor:pointer;font-size:13px;transition:all .2s}
+.auth-tab.active{background:var(--gold);color:#0a0c0f;font-weight:600}
+.auth-note{font-size:11px;color:var(--ts);text-align:center;margin-top:1.5rem;line-height:1.6;padding:10px;background:rgba(201,168,76,.05);border-radius:6px;border:1px solid var(--border)}
 
-.main {
-  max-width: 1200px;
-  margin: 120px auto 0;
-  display: grid;
-  grid-template-columns: 1.2fr .8fr;
-  gap: 60px;
-  align-items: center;
-}
+/* apply */
+.apply-sec{padding:4rem 2rem;max-width:700px;margin:0 auto}
+.apply-card{background:rgba(22,27,36,.92);border:1px solid var(--border);border-radius:12px;padding:2.5rem}
+.apply-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+.apply-full{grid-column:1/-1}
 
-.kicker {
-  color: #d4af37;
-  border: 1px solid rgba(212,175,55,.5);
-  display: inline-block;
-  padding: 8px 18px;
-  border-radius: 30px;
-  letter-spacing: 3px;
-  font-size: 12px;
-  margin-bottom: 25px;
-}
+/* dashboard */
+.dash-layout{display:flex;min-height:calc(100vh - 60px)}
+.dash-sb{width:220px;flex-shrink:0;background:#0f1319;border-right:1px solid var(--border-d);display:flex;flex-direction:column;padding:0}
+.sb-brand{display:flex;align-items:center;gap:10px;padding:1.25rem;border-bottom:1px solid var(--border-d)}
+.sb-title{font-size:13px;font-weight:700;line-height:1.2}
+.sb-sub{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.sb-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ts);padding:12px 1.25rem 4px}
+.sb-nav{display:flex;flex-direction:column;padding:4px 8px}
+.sb-btn{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;color:var(--ts);padding:9px 12px;border-radius:6px;cursor:pointer;font-size:13px;text-align:left;transition:all .15s;white-space:nowrap}
+.sb-btn:hover{background:rgba(255,255,255,.05);color:var(--tp)}
+.sb-btn.active{background:rgba(201,168,76,.1);color:var(--gold);font-weight:600}
+.sb-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-div{height:1px;background:var(--border-d);margin:.5rem 1rem}
+.duty-row{display:flex;align-items:center;gap:8px;padding:4px 1.25rem}
+.duty-dot{width:8px;height:8px;border-radius:50%;background:#3db87a;box-shadow:0 0 6px #3db87a;flex-shrink:0}
+.duty-lbl{font-size:12px;font-weight:700;color:#6adba0;letter-spacing:1px}
+.duty-meta{font-size:11px;color:var(--ts);line-height:1.7;padding:2px 1.25rem 8px}
+.sb-bottom{margin-top:auto;padding:8px;border-top:1px solid var(--border-d)}
+.dash-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.dash-top{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border-d);background:#0d1117;flex-shrink:0}
+.dash-welcome{font-size:18px;font-weight:700;margin-bottom:2px}
+.dash-crumb{font-size:12px;color:var(--ts)}
+.dash-body{padding:2rem;flex:1}
 
-h1 {
-  font-size: 92px;
-  line-height: .9;
-  letter-spacing: 3px;
-}
+/* tabs */
+.tab-pane{display:none}
+.tab-pane.active{display:block}
 
-h2 {
-  color: #d4af37;
-  font-size: 42px;
-  letter-spacing: 5px;
-  margin-top: 20px;
-}
+/* log entries */
+.log-entry{background:var(--navy-m);border:1px solid var(--border-d);border-radius:8px;padding:1.25rem 1.5rem;margin-bottom:1rem;border-left:3px solid var(--gold)}
+.le-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.le-meta{font-size:12px;color:var(--ts);margin-top:6px;display:flex;gap:16px;flex-wrap:wrap}
+.log-entry h4{font-size:15px;font-weight:600;margin-top:4px}
+.le-notes{font-size:13px;color:var(--ts);margin-top:8px;line-height:1.5;border-top:1px solid var(--border-d);padding-top:8px}
+.le-actions{margin-top:10px;padding-top:10px;border-top:1px solid var(--border-d);display:flex;gap:8px}
+.empty{text-align:center;padding:4rem 2rem;color:var(--ts)}
+.empty-icon{font-size:40px;margin-bottom:12px}
 
-.motto {
-  margin-top: 30px;
-  font-size: 18px;
-  font-weight: 900;
-  letter-spacing: 2px;
-}
+/* apps */
+.apps-filter{display:flex;gap:8px;margin-bottom:1.5rem}
+.af-btn{background:none;border:1px solid var(--border);color:var(--ts);padding:5px 14px;border-radius:4px;font-size:12px;cursor:pointer}
+.af-btn.active{border-color:var(--gold);color:var(--gold)}
+.app-card{background:var(--navy-m);border:1px solid var(--border-d);border-radius:8px;padding:1.2rem 1.5rem;margin-bottom:1rem}
+.app-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.8rem}
+.app-card h4{font-size:15px;font-weight:600;margin-bottom:2px}
+.app-meta{font-size:12px;color:var(--ts)}
+.app-actions{display:flex;gap:8px;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border-d)}
+.s-pending{color:var(--gold)}.s-reviewed{color:#7ab8ff}.s-approved{color:#4caf82}.s-rejected{color:#f08080}
 
-.desc {
-  margin-top: 25px;
-  max-width: 650px;
-  color: #cbd5e1;
-  line-height: 1.7;
-}
+/* officers */
+.user-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-d)}
+.user-row:last-child{border-bottom:none}
+.ua{width:36px;height:36px;border-radius:50%;background:var(--navy-l);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--gold);border:1px solid var(--border);flex-shrink:0}
+.ui strong{font-size:14px;display:block}
+.ui span{font-size:12px;color:var(--ts)}
+.ui{flex:1}
 
-.login {
-  background: rgba(10,15,25,.92);
-  border: 1px solid rgba(212,175,55,.45);
-  padding: 35px;
-  border-radius: 10px;
-  box-shadow: 0 0 60px rgba(0,0,0,.7);
-}
+/* mail */
+.mail-wrap{display:grid;grid-template-columns:260px 1fr;height:calc(100vh - 160px);background:var(--navy-m);border:1px solid var(--border-d);border-radius:10px;overflow:hidden}
+.mail-sidebar{border-right:1px solid var(--border-d);display:flex;flex-direction:column}
+.mail-sb-top{padding:1rem 1.25rem;border-bottom:1px solid var(--border-d);display:flex;align-items:center;justify-content:space-between}
+.mail-sb-lbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ts)}
+.mail-folder-btn{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;color:var(--ts);padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;text-align:left;transition:all .15s;margin-bottom:2px}
+.mail-folder-btn:hover{background:rgba(255,255,255,.05);color:var(--tp)}
+.mail-folder-btn.active{background:rgba(201,168,76,.1);color:var(--gold);font-weight:600}
+.mail-list{flex:1;overflow-y:auto}
+.mail-item{padding:10px 14px;border-bottom:1px solid var(--border-d);cursor:pointer;transition:background .15s}
+.mail-item:hover{background:rgba(255,255,255,.03)}
+.mail-item.unread .mi-subject{font-weight:700;color:var(--tp)}
+.mi-from{font-size:12px;color:var(--ts);margin-bottom:3px;display:flex;justify-content:space-between}
+.mi-subject{font-size:13px;color:var(--ts);margin-bottom:2px}
+.mi-preview{font-size:11px;color:var(--ts);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mail-right{display:flex;flex-direction:column;min-height:0;height:100%}
+.mail-view{flex:1 1 auto;overflow-y:auto;padding:2rem;min-height:0}
+.mail-reply{border-top:1px solid var(--border-d);padding:1.25rem;flex-shrink:0}
 
-.login h3 {
-  font-size: 24px;
-  margin-bottom: 15px;
-  letter-spacing: 2px;
-}
+/* map */
+.map-layout{display:grid;grid-template-columns:1fr 300px;gap:1.5rem;align-items:start}
+.map-card{background:var(--navy-m);border:1px solid var(--border-d);border-radius:8px;padding:1.25rem;margin-bottom:1rem}
+.map-card h4{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--gold)}
+.map-legend{display:flex;flex-direction:column;gap:8px}
+.ml-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ts)}
+.ml-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 
-.login p {
-  color: #94a3b8;
-  margin-bottom: 20px;
-}
+/* handbook */
+.hb-sec{margin-bottom:3rem;padding-bottom:3rem;border-bottom:1px solid var(--border-d)}
+.hb-sec:last-child{border-bottom:none}
+.hb-num{font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:.5rem}
+.hb-title{font-size:1.5rem;font-weight:700;margin-bottom:1rem}
+.hb-body{font-size:14px;color:#c0c4d4;line-height:1.8;margin-bottom:.75rem}
+.hb-list{list-style:none;padding:0;margin:.75rem 0}
+.hb-list li{font-size:13px;color:var(--ts);padding:5px 0 5px 20px;position:relative;line-height:1.6;border-bottom:1px solid rgba(255,255,255,.03)}
+.hb-list li::before{content:"➔";position:absolute;left:0;color:var(--gold);font-size:11px;top:6px}
+.hb-rank-grid{display:grid;gap:.75rem;margin-top:1.5rem}
+.hb-rank-card{display:flex;align-items:flex-start;gap:1rem;background:var(--navy-m);border:1px solid var(--border-d);border-radius:8px;padding:1rem 1.25rem;border-left:3px solid var(--gold)}
+.hb-rbadge{background:rgba(201,168,76,.1);color:var(--gold);font-size:11px;font-weight:800;letter-spacing:1px;padding:4px 8px;border-radius:4px;border:1px solid var(--border);white-space:nowrap;flex-shrink:0;align-self:flex-start}
+.hb-rname{font-size:14px;font-weight:700;margin-bottom:4px}
+.hb-rdesc{font-size:12px;color:var(--ts);line-height:1.6}
+.hb-area-card{background:var(--navy-m);border:1px solid var(--border-d);border-radius:8px;padding:1.25rem}
+.hb-area-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem}
 
-input {
-  width: 100%;
-  padding: 15px;
-  margin-bottom: 14px;
-  border-radius: 6px;
-  border: 1px solid #334155;
-  background: #e8f0fe;
-}
+/* drug/firearm row builder */
+.item-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.item-row select{flex:1}
+.item-row input{width:90px}
+.item-row .rm{background:none;border:1px solid rgba(214,69,69,.3);color:#f08080;border-radius:4px;width:32px;height:38px;cursor:pointer;font-size:16px;flex-shrink:0}
 
-button {
-  width: 100%;
-  padding: 15px;
-  background: #d4af37;
-  color: #000;
-  border: none;
-  border-radius: 6px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  cursor: pointer;
-}
+/* arrested persons */
+.arr-row{background:rgba(10,12,15,.5);border:1px solid var(--border-d);border-radius:6px;padding:12px 14px;margin-bottom:8px}
+.arr-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.charge-line{display:flex;gap:6px;margin-bottom:6px}
+.charge-line select{flex:1}
+.charge-line .rm{background:none;border:1px solid rgba(214,69,69,.3);color:#f08080;border-radius:4px;padding:0 10px;cursor:pointer;font-size:16px;flex-shrink:0;height:38px}
 
-.stats {
-  max-width: 1200px;
-  margin: 70px auto 0;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-}
+/* spinner */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(201,168,76,.3);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
 
-.stat {
-  background: rgba(10,15,25,.9);
-  border: 1px solid rgba(212,175,55,.35);
-  padding: 25px;
-  border-radius: 8px;
-  text-align: center;
-}
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal{background:#161b24;border:1px solid var(--border-d);border-radius:12px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;padding:2rem;position:relative}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--ts);font-size:20px;cursor:pointer;line-height:1}
+.modal-close:hover{color:var(--tp)}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:1.5rem;padding-right:2rem}
+.modal-field{margin-bottom:1rem}
+.modal-lbl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);margin-bottom:4px}
+.modal-val{font-size:14px;color:var(--tp);line-height:1.6}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.modal-divider{height:1px;background:var(--border-d);margin:1.25rem 0}
+.edit-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
 
-.stat strong {
-  font-size: 34px;
-}
-
-.stat span {
-  display: block;
-  color: #d4af37;
-  font-size: 12px;
-  margin-top: 8px;
-  letter-spacing: 1px;
-}
-
-@media(max-width:900px) {
-  .main {
-    grid-template-columns: 1fr;
-    margin-top: 70px;
-  }
-
-  h1 {
-    font-size: 60px;
-  }
-
-  h2 {
-    font-size: 30px;
-  }
-
-  .stats {
-    grid-template-columns: 1fr 1fr;
-  }
+@media(max-width:768px){
+  .hero-strip{flex-direction:column;width:100%}
+  .frow{grid-template-columns:1fr}
+  body>nav{padding:0 1rem}
+  .dash-body{padding:1rem}
+  .sec{padding:2rem 1rem}
+  .map-layout{grid-template-columns:1fr}
+  .dash-sb{width:190px}
+  .hb-area-grid{grid-template-columns:1fr}
+  .dispatch-ref-grid{grid-template-columns:1fr !important}
 }
 </style>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
 <body>
+<div class="pfbg" id="pfbg" style="pointer-events:none;display:none"></div>
 
-<section class="hero">
+<nav>
+  <div class="nb">
+    <div class="nb-badge">LSPD</div>
+    <div><div class="nb-title">Vice Unit</div><div class="nb-sub">Drug Enforcement Division</div></div>
+  </div>
+  <div class="nl">
+    <button class="btn" id="nav-public">Public Stats</button>
+    <button class="btn" id="nav-apply">Apply to Join</button>
+    <button class="btn" id="nav-handbook">Handbook</button>
+    <button class="btn" id="nav-dash" style="display:none">⬅ Dashboard</button>
+    <button class="btn primary" id="nav-login">Officer Login</button>
+  </div>
+</nav>
 
-  <nav class="nav">
-    <div class="logo">
-      <div class="badge">LSPD</div>
-      <div>
-        <h3>VICE UNIT</h3>
-        <p>DRUG ENFORCEMENT DIVISION</p>
+<!-- ═══════════════════════ PUBLIC ═══════════════════════ -->
+<div class="page active" id="pg-public">
+  <div class="hero">
+    <div class="hero-eyebrow">Los Santos Police Department · Vice Unit</div>
+    <h1>Drug Enforcement<br><span>Operations Hub</span></h1>
+    <p>Real-time seizure data and enforcement statistics for the Vice Unit Drug Enforcement Division.</p>
+    <div class="hero-strip">
+      <div class="hs"><div class="hs-num" id="hs-total">—</div><div class="hs-lbl">Total Seizures</div></div>
+      <div class="hs"><div class="hs-num" id="hs-value">—</div><div class="hs-lbl">Est. Street Value</div></div>
+      <div class="hs"><div class="hs-num" id="hs-arrests">—</div><div class="hs-lbl">Arrests Made</div></div>
+      <div class="hs"><div class="hs-num" id="hs-month">—</div><div class="hs-lbl">This Month</div></div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="sec">
+    <div class="sg">
+      <div class="sc"><div class="sc-lbl">Total Drugs Seized</div><div class="sc-val gold" id="pub-weight">—</div></div>
+      <div class="sc"><div class="sc-lbl">Firearms Seized</div><div class="sc-val red" id="pub-firearms">—</div></div>
+      <div class="sc"><div class="sc-lbl">Operations Run</div><div class="sc-val gold" id="pub-ops">—</div></div>
+      <div class="sc"><div class="sc-lbl">Arrest Rate</div><div class="sc-val green" id="pub-rate">—</div></div>
+    </div>
+    <div class="sec-hd"><div class="tag">Recent Seizure Logs</div><h2>Latest Enforcement Activity</h2></div>
+    <div class="tbl-wrap">
+      <div class="tbl-head"><h3>Seizure Registry</h3><span class="badge bg-gold">Public Record</span></div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Date</th><th>Type</th><th>Items Seized</th><th>Est. Value</th><th>Location</th><th>Status</th></tr></thead>
+        <tbody id="pub-table"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">Loading...</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ APPLY ═══════════════════════ -->
+<div class="page" id="pg-apply">
+  <div class="apply-sec">
+    <div style="text-align:center;margin-bottom:2.5rem">
+      <div style="font-size:48px;margin-bottom:12px">🛡️</div>
+      <div class="tag" style="display:inline-block;margin-bottom:8px">LSPD Vice Unit · Drug Enforcement Division</div>
+      <h1 style="font-size:1.9rem;font-weight:700;margin-bottom:.5rem">Apply to <span style="color:var(--gold)">Join the Unit</span></h1>
+      <p style="color:var(--ts);font-size:14px;max-width:480px;margin:0 auto;line-height:1.7">Fill in this form as your character. All fields are in-character.</p>
+    </div>
+    <div class="apply-card">
+      <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:2rem">
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">In-Character Application</div>
+      </div>
+      <div id="apply-msg"></div>
+      <div class="apply-grid">
+        <div class="fgrp"><label class="flbl">Character Name *</label><input class="fi" type="text" id="app-char" placeholder="e.g. Marcus Webb"></div>
+        <div class="fgrp"><label class="flbl">Current Rank *</label>
+          <select class="fi" id="app-rank">
+            <option value="">— Select rank —</option>
+            <option>Officer</option><option>Corporal</option><option>Sergeant</option>
+            <option>Lieutenant</option><option>Captain</option>
+            <option>Assistant Chief of Police</option><option>Chief of Police</option>
+          </select>
+        </div>
+        <div class="fgrp"><label class="flbl">Email (Personal File) *</label><input class="fi" type="email" id="app-email" placeholder="e.g. officer@lspd.gov"></div>
+        <div class="fgrp"><label class="flbl">Discord *</label><input class="fi" type="text" id="app-discord" placeholder="e.g. @marcuswebb"></div>
+        <div class="fgrp apply-full"><label class="flbl">Why do you want to join the Vice Unit? *</label><textarea class="fi" id="app-why" placeholder="Tell us IC why your character wants to join..."></textarea></div>
+      </div>
+      <button class="sbtn" id="app-submit">Submit Application</button>
+    </div>
+
+    <!-- Application Status Check -->
+    <div style="margin-top:2rem">
+      <div style="text-align:center;margin-bottom:1.5rem">
+        <div style="font-size:13px;color:var(--ts);margin-bottom:.5rem">Already applied?</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:.25rem">Check Your Application</div>
+        <div style="font-size:13px;color:var(--ts)">Enter your Discord handle to see your status and any messages from the unit.</div>
+      </div>
+      <div class="apply-card" style="max-width:500px;margin:0 auto">
+        <div id="status-msg"></div>
+        <div class="fgrp"><label class="flbl">Your Discord Handle *</label><input class="fi" type="text" id="status-discord" placeholder="e.g. @marcuswebb"></div>
+        <button class="sbtn" id="status-check-btn">Check Status</button>
+        <div id="status-result" style="margin-top:1.5rem"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ APPLICANT INTRANET ═══════════════════════ -->
+<div class="page" id="pg-intranet">
+  <div style="display:flex;height:calc(100vh - 60px)">
+
+    <!-- Sidebar -->
+    <div style="width:260px;flex-shrink:0;background:#0f1319;border-right:1px solid var(--border-d);display:flex;flex-direction:column">
+      <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border-d);display:flex;align-items:center;gap:10px">
+        <div style="font-size:22px">🛡️</div>
+        <div>
+          <div style="font-size:12px;font-weight:700">VICE Unit</div>
+          <div style="font-size:10px;color:var(--gold);letter-spacing:1px;text-transform:uppercase">IC Intranet</div>
+        </div>
+      </div>
+      <div style="padding:.5rem .75rem;border-bottom:1px solid var(--border-d)">
+        <div id="intranet-user-info" style="padding:.5rem .5rem;font-size:12px;color:var(--ts)">Not identified</div>
+      </div>
+      <div style="padding:.5rem .75rem">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ts);padding:.5rem .5rem .25rem">Mailbox</div>
+        <button class="mail-folder-btn active" id="intr-inbox-btn">📥 Inbox</button>
+        <button class="mail-folder-btn" id="intr-sent-btn" style="display:none">📤 Sent</button>
+      </div>
+      <div id="intranet-msg-list" style="flex:1;overflow-y:auto;border-top:1px solid var(--border-d)"></div>
+      <div style="padding:.75rem;border-top:1px solid var(--border-d)">
+        <button class="btn" style="width:100%;font-size:13px" onclick="showPage('apply')">← Back to Application</button>
       </div>
     </div>
 
-    <div>
-      <a href="#">Public Stats</a>
-      <a class="gold" href="#login">Officer Login</a>
-    </div>
-  </nav>
+    <!-- Main -->
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+      <!-- Topbar -->
+      <div style="padding:1rem 2rem;border-bottom:1px solid var(--border-d);background:#0d1117;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:16px;font-weight:700">IC Intranet Portal</div>
+          <div style="font-size:12px;color:var(--ts)">Applicant Communications</div>
+        </div>
+        <div id="intranet-status-badge"></div>
+      </div>
 
-  <div class="main">
-    <div>
-      <div class="kicker">LOS SANTOS POLICE DEPARTMENT · VICE UNIT</div>
-      <h1>LSPD<br>VICE</h1>
-      <h2>DRUG ENFORCEMENT UNIT</h2>
-      <p class="motto">DISRUPTING NETWORKS. PROTECTING SAN ANDREAS.</p>
-      <p class="desc">
-        Intelligence-led narcotics investigations targeting distribution networks,
-        trafficking organizations, and criminal supply chains across Los Santos
-        and the State of San Andreas.
-      </p>
-    </div>
+      <!-- Message view -->
+      <div style="flex:1;overflow-y:auto;padding:2rem" id="intranet-msg-view">
+        <div style="text-align:center;padding:4rem;color:var(--ts)">
+          <div style="font-size:40px;margin-bottom:12px">✉️</div>
+          <p>Select a message to read it</p>
+        </div>
+      </div>
 
-    <div class="login" id="login">
-      <h3>AUTHORIZED PERSONNEL ONLY</h3>
-      <p>Access is restricted to approved LSPD VICE personnel.</p>
-
-      <form id="loginForm">
-        <input id="email" type="email" placeholder="Email Address" required>
-        <input id="password" type="password" placeholder="Password" required>
-        <button type="submit">ACCESS PORTAL</button>
-      </form>
-
-      <p id="message"></p>
+      <!-- Reply -->
+      <div id="intranet-reply" style="display:none;border-top:1px solid var(--border-d);padding:1.25rem">
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px">Reply</div>
+        <div id="intranet-reply-msg"></div>
+        <textarea class="fi" id="intranet-reply-body" style="min-height:80px;margin-bottom:10px" placeholder="Type your reply..."></textarea>
+        <div style="display:flex;justify-content:flex-end">
+          <button class="sbtn" id="intranet-send-reply" style="width:auto;padding:8px 20px">Send Reply ↗</button>
+        </div>
+      </div>
     </div>
   </div>
+</div>
 
-  <div class="stats">
-    <div class="stat"><strong>12</strong><span>ACTIVE CASES</span></div>
-    <div class="stat"><strong>7</strong><span>SEARCH WARRANTS</span></div>
-    <div class="stat"><strong>34</strong><span>ARRESTS THIS MONTH</span></div>
-    <div class="stat"><strong>128 lbs</strong><span>NARCOTICS SEIZED</span></div>
+<!-- ═══════════════════════ HANDBOOK ═══════════════════════ -->
+<div class="page" id="pg-handbook">
+  <div style="max-width:860px;margin:0 auto;padding:3rem 2rem 5rem">
+    <div style="text-align:center;padding:3rem 0 2.5rem;border-bottom:1px solid var(--border-d);margin-bottom:3rem">
+      <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:1rem">Los Santos Police Department</div>
+      <div style="font-size:48px;margin-bottom:1rem">🛡️</div>
+      <h1 style="font-size:2.2rem;font-weight:800;margin-bottom:.5rem">Vice Unit</h1>
+      <div style="font-size:14px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:1.5rem">Drug Enforcement Division — Official Handbook</div>
+      <div style="display:inline-block;background:rgba(201,168,76,.08);border:1px solid var(--border);border-radius:6px;padding:8px 20px;font-size:12px;color:var(--ts)">🔒 Law Enforcement Sensitive — Official Use Only</div>
+    </div>
+    <div class="hb-sec" id="hb-intro">
+      <div class="hb-num">01</div><h2 class="hb-title">Introduction</h2>
+      <p class="hb-body">VICE is a division within the Los Santos Police Department responsible for fighting the drug issue in Los Santos. This handbook outlines the division's organisational structure, goals, and standard operating procedures for how each drug trade is to be systematically dismantled.</p>
+      <ul class="hb-list">
+        <li>Focusing on areas with high concentrations of crime to identify where drugs are sold.</li>
+        <li>Increasing patrols in known hotspots to deter illegal activity.</li>
+        <li>Conducting targeted operations to dismantle supply chains at their source.</li>
+      </ul>
+    </div>
+    <div class="hb-sec" id="hb-structure">
+      <div class="hb-num">02</div><h2 class="hb-title">Unit Structure &amp; Roles</h2>
+      <p class="hb-body">The Vice Unit operates under a clear chain of command. Each rank carries defined responsibilities.</p>
+      <div class="hb-rank-grid">
+        <div class="hb-rank-card"><div class="hb-rbadge">CoP</div><div><div class="hb-rname">Chief of Police</div><div class="hb-rdesc">Highest authority within the Vice Unit. Sets overarching policy, strategy, and unit direction. Final decision-maker on all operational and disciplinary matters.</div></div></div>
+        <div class="hb-rank-card"><div class="hb-rbadge">ACoP</div><div><div class="hb-rname">Assistant Chief of Police</div><div class="hb-rdesc">Supports the Chief of Police in overseeing the division. Shares command responsibilities and acts as Chief in their absence.</div></div></div>
+        <div class="hb-rank-card"><div class="hb-rbadge">CPT</div><div><div class="hb-rname">Captain</div><div class="hb-rdesc">Oversees day-to-day divisional operations and strategy. Responsible for ensuring operations and enforcement are running smoothly.</div></div></div>
+        <div class="hb-rank-card"><div class="hb-rbadge">LT</div><div><div class="hb-rname">Lieutenant</div><div class="hb-rdesc">Leads operations on the ground. Coordinates officers during active enforcement, manages operation planning, and reports up to Captain.</div></div></div>
+        <div class="hb-rank-card"><div class="hb-rbadge">SGT</div><div><div class="hb-rname">Sergeant</div><div class="hb-rdesc">Supervises patrol officers and junior members. Ensures SOPs are followed and acts as a field supervisor during operations.</div></div></div>
+        <div class="hb-rank-card"><div class="hb-rbadge">CPL</div><div><div class="hb-rname">Corporal</div><div class="hb-rdesc">Experienced officer who has demonstrated competence in the field. Assists in supervision of Officers and may serve as a field trainer.</div></div></div>
+        <div class="hb-rank-card"><div class="hb-rbadge">OFC</div><div><div class="hb-rname">Officer</div><div class="hb-rdesc">Entry-level rank within the Vice Unit. Officers conduct directed patrols in high-drug-activity zones, monitor for suspicious behaviour, and carry out general enforcement duties.</div></div></div>
+      </div>
+    </div>
+    <div class="hb-sec">
+      <div class="hb-num">03</div><h2 class="hb-title">Vehicles &amp; Equipment</h2>
+      <p class="hb-body">Vice Unit officers are authorised to operate the following divisional vehicles during active duty. All vehicles must be used strictly for official law enforcement purposes.</p>
+      <div style="display:grid;gap:.75rem;margin-top:1.5rem">
+        <div class="hb-rank-card"><div class="hb-rbadge">🚗</div><div><div class="hb-rname">Bullet</div><div class="hb-rdesc">High-speed pursuit vehicle. Authorised for high-speed chases and rapid response. Handle with care — top speed makes it difficult to control in urban environments.</div></div></div>
+        <div class="hb-rank-card"><div class="hb-rbadge">🚓</div><div><div class="hb-rname">Cruiser (Police Cruiser)</div><div class="hb-rdesc">Standard patrol vehicle. Primary vehicle for general patrols, traffic stops, and area monitoring. Well-balanced and reliable for everyday operations.</div></div></div>
+        <div class="hb-rank-card"><div class="hb-rbadge">🚙</div><div><div class="hb-rname">Huntley S</div><div class="hb-rdesc">Unmarked SUV. Used for surveillance operations and undercover work. Blends into civilian traffic. Preferred for stake-outs and covert approaches.</div></div></div>
+        <div class="hb-rank-card"><div class="hb-rbadge">🚘</div><div><div class="hb-rname">Sultan</div><div class="hb-rdesc">Unmarked performance sedan. Versatile vehicle suitable for both pursuit and undercover work. Good handling across varied terrain including industrial areas and back streets.</div></div></div>
+      </div>
+    </div>
+    <div class="hb-sec">
+      <div class="hb-num">04</div><h2 class="hb-title">Key Interest Areas</h2>
+      <div class="hb-area-grid">
+        <div class="hb-area-card"><div style="font-size:28px;margin-bottom:.5rem">⚓</div><div style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:.25rem">Ocean Docks</div><ul class="hb-list"><li>Primary entry point for imported narcotics.</li><li>Priority zone for intercepting illegal substance deliveries.</li></ul></div>
+        <div class="hb-area-card"><div style="font-size:28px;margin-bottom:.5rem">🏭</div><div style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:.25rem">Drug Factory</div><ul class="hb-list"><li>Primary source of production and distribution of narcotics.</li><li>Target for raids to cut off supply chains at source.</li></ul></div>
+      </div>
+    </div>
+    <div class="hb-sec">
+      <div class="hb-num">05</div><h2 class="hb-title">Tactical Approach &amp; Enforcement</h2>
+      <div style="display:grid;gap:1rem;margin-top:1.5rem">
+        <div class="hb-area-card"><div style="font-size:14px;font-weight:700;margin-bottom:.75rem">🚔 Hotspot Patrols</div><ul class="hb-list"><li>Officers stationed in areas known to be drug-prone with routine stop-and-search capability.</li><li>Traffic in and around drug-activity areas policed to capture illegal movements.</li></ul></div>
+        <div class="hb-area-card"><div style="font-size:14px;font-weight:700;margin-bottom:.75rem">🎯 Sting Operations</div><ul class="hb-list"><li>Controlled drug busts aimed at capturing distributors in action.</li><li>Team execution of well-planned takedowns with comprehensive legal documentation.</li></ul></div>
+      </div>
+    </div>
+    <div class="hb-sec">
+      <div class="hb-num">06</div><h2 class="hb-title">Code of Conduct</h2>
+      <ul class="hb-list">
+        <li>Treat all individuals with respect regardless of their status or suspected involvement.</li>
+        <li>All use of force must be proportionate and justified under the Force Matrix.</li>
+        <li>Officers must log all seizures accurately and promptly in the unit portal.</li>
+        <li>Confidential operational information must not be shared outside authorised channels.</li>
+        <li>Any misconduct or policy violations must be reported to a senior officer immediately.</li>
+        <li>Officers found in breach of conduct may face disciplinary action up to and including removal from the unit.</li>
+      </ul>
+    </div>
+    <div style="text-align:center;padding:2rem 0;border-top:1px solid var(--border-d);margin-top:3rem;color:var(--ts);font-size:12px;letter-spacing:1px">LSPD VICE UNIT · DRUG ENFORCEMENT DIVISION · OFFICIAL USE ONLY</div>
   </div>
+</div>
 
-</section>
+<!-- ═══════════════════════ LOGIN ═══════════════════════ -->
+<div class="page" id="pg-login">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo"><div class="sh">🛡️</div><h2>Vice Unit Portal</h2><p>Authorised Personnel Only</p></div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-signin">Sign In</button>
+        <button class="auth-tab" id="tab-register">Register</button>
+      </div>
+      <div id="auth-msg"></div>
+      <div id="signin-form">
+        <div class="fgrp"><label class="flbl">Email Address</label><input class="fi" type="email" id="si-email" placeholder="officer@lspd.gov"></div>
+        <div class="fgrp"><label class="flbl">Password</label><input class="fi" type="password" id="si-pass" placeholder="Enter password"></div>
+        <button class="sbtn" id="si-btn">Sign In to Portal</button>
+        <div class="auth-note">🔒 Passwords encrypted by Supabase (bcrypt)</div>
+      </div>
+      <div id="reg-form" style="display:none">
+        <div class="fgrp"><label class="flbl">Character Name</label><input class="fi" type="text" id="reg-name" placeholder="e.g. John Martinez"></div>
+        <div class="fgrp"><label class="flbl">Badge Number</label><input class="fi" type="text" id="reg-badge" placeholder="e.g. V-4821"></div>
+        <div class="fgrp"><label class="flbl">Rank</label>
+          <select class="fi" id="reg-rank">
+            <option>Officer</option><option>Corporal</option><option>Sergeant</option>
+            <option>Lieutenant</option><option>Captain</option>
+            <option>Assistant Chief of Police</option><option>Chief of Police</option>
+          </select>
+        </div>
+        <div class="fgrp"><label class="flbl">Email Address</label><input class="fi" type="email" id="reg-email" placeholder="officer@lspd.gov"></div>
+        <div class="fgrp"><label class="flbl">Password</label><input class="fi" type="password" id="reg-pass" placeholder="Min. 8 characters"></div>
+        <div class="fgrp"><label class="flbl">Confirm Password</label><input class="fi" type="password" id="reg-pass2" placeholder="Repeat password"></div>
+        <button class="sbtn" id="reg-btn">Create Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ DASHBOARD ═══════════════════════ -->
+<div class="page" id="pg-dash">
+  <div class="dash-layout">
+    <div class="dash-sb">
+      <div class="sb-brand"><div style="font-size:28px">🛡️</div><div><div class="sb-title">LSPD Vice Unit</div><div class="sb-sub">Drug Enforcement</div></div></div>
+      <div class="sb-lbl">Officer Portal</div>
+      <div class="sb-nav">
+        <button class="sb-btn active" data-tab="logs"><span class="sb-icon">📋</span>Seizure Logs</button>
+        <button class="sb-btn" data-tab="add"><span class="sb-icon">＋</span>Add Log</button>
+        <button class="sb-btn" data-tab="map"><span class="sb-icon">🗺</span>Operations Map</button>
+        <button class="sb-btn" data-tab="dispatch"><span class="sb-icon">📡</span>Dispatch Centre</button>
+        <button class="sb-btn" data-tab="stats"><span class="sb-icon">📊</span>My Stats</button>
+        <button class="sb-btn" data-tab="analytics"><span class="sb-icon">📈</span>Analytics</button>
+        <button class="sb-btn" data-tab="mail"><span class="sb-icon">✉️</span>IC Intranet <span id="sb-mail-badge" style="margin-left:auto;background:var(--gold);color:#0a0c0f;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;display:none"></span></button>
+        <button class="sb-btn admin-only" data-tab="apps" style="display:none"><span class="sb-icon">📝</span>Applications <span id="sb-apps-badge" style="margin-left:auto;background:var(--gold);color:#0a0c0f;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;display:none"></span></button>
+        <button class="sb-btn admin-only" data-tab="users" style="display:none"><span class="sb-icon">👥</span>Manage Officers</button>
+      </div>
+      <div class="sb-div"></div>
+      <div class="sb-lbl">Duty Status</div>
+      <div class="duty-row"><span class="duty-dot"></span><span class="duty-lbl">ON DUTY</span></div>
+      <div class="duty-meta" id="duty-meta"></div>
+      <div class="sb-bottom"><button class="sb-btn" id="logout-btn"><span class="sb-icon">🚪</span>Sign Out</button></div>
+    </div>
+    <div class="dash-main">
+      <div class="dash-top">
+        <div><div class="dash-welcome" id="dash-welcome">Welcome back, Officer</div><div class="dash-crumb">Home › Dashboard</div></div>
+        <span class="badge bg-green" id="dash-rank-badge" style="font-size:12px;padding:5px 14px">Officer</span>
+      </div>
+      <div class="dash-body">
+
+        <!-- LOGS -->
+        <div class="tab-pane active" id="tab-logs">
+          <div class="sg">
+            <div class="sc"><div class="sc-lbl">📦 Your Seizures</div><div class="sc-val gold" id="my-seizures">—</div></div>
+            <div class="sc"><div class="sc-lbl">🏛 Unit Total</div><div class="sc-val gold" id="all-seizures">—</div></div>
+            <div class="sc"><div class="sc-lbl">💰 Street Value</div><div class="sc-val green" id="all-value">—</div></div>
+            <div class="sc"><div class="sc-lbl">🚔 Total Arrests</div><div class="sc-val red" id="all-arrests">—</div></div>
+          </div>
+          <div class="sec-hd"><div class="tag">All Unit Logs</div><h2>Seizure Records</h2></div>
+          <div id="logs-list"></div>
+        </div>
+
+        <!-- ADD LOG -->
+        <div class="tab-pane" id="tab-add">
+          <div class="sec-hd"><div class="tag">New Entry</div><h2>Log a Seizure</h2></div>
+          <div id="add-log-msg"></div>
+          <div style="max-width:640px">
+            <div class="fgrp"><label class="flbl">Seizure Type *</label>
+              <select class="fi" id="log-type">
+                <option value="">— Select type —</option>
+                <option value="drug">Narcotics</option>
+                <option value="firearm">Firearms</option>
+                <option value="both">Narcotics &amp; Firearms</option>
+              </select>
+            </div>
+            <div id="drug-group" style="display:none">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <label class="flbl" style="margin:0">Drugs Seized</label>
+                <button type="button" class="btn" id="add-drug-btn" style="font-size:12px;padding:4px 12px">+ Add Drug</button>
+              </div>
+              <div id="drug-rows"></div>
+            </div>
+            <div id="firearm-group" style="display:none">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <label class="flbl" style="margin:0">Firearms Seized</label>
+                <button type="button" class="btn" id="add-firearm-btn" style="font-size:12px;padding:4px 12px">+ Add Firearm</button>
+              </div>
+              <div id="firearm-rows"></div>
+            </div>
+            <div class="frow">
+              <div class="fgrp"><label class="flbl">Est. Street Value ($) *</label><input class="fi" type="number" id="log-value" placeholder="e.g. 15000" min="0"></div>
+              <div class="fgrp"><label class="flbl">Location *</label><input class="fi" type="text" id="log-location" placeholder="e.g. Strawberry Ave, Davis"></div>
+            </div>
+            <div class="fgrp"><label class="flbl">Operation Type</label>
+              <select class="fi" id="log-optype">
+                <option>Traffic Stop</option><option>Search Warrant</option><option>Undercover Operation</option>
+                <option>Surveillance</option><option>Tip-off / Informant</option><option>Patrol Encounter</option><option>Other</option>
+              </select>
+            </div>
+            <div class="fgrp"><label class="flbl">Notes / Narrative</label><textarea class="fi" id="log-notes" placeholder="Brief description..."></textarea></div>
+            <div style="border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:1.25rem;background:rgba(10,12,15,.4)">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+                <div><div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:3px">Arrested Persons</div><div style="font-size:12px;color:var(--ts)">Add each individual arrested.</div></div>
+                <button type="button" class="btn" id="add-arr-btn" style="font-size:12px;padding:4px 12px">+ Add Person</button>
+              </div>
+              <div id="arr-rows"><div style="color:var(--ts);font-size:13px;text-align:center;padding:1rem 0;font-style:italic">No arrests — click "Add Person" if arrests were made.</div></div>
+            </div>
+            <button class="sbtn" id="log-submit">Submit Seizure Log</button>
+          </div>
+        </div>
+
+        <!-- MAP -->
+        <div class="tab-pane" id="tab-map">
+          <div class="sec-hd"><div class="tag">Operations Map</div><h2>San Andreas — Seizure Locations</h2></div>
+          <div class="map-layout">
+            <div style="background:var(--navy-m);border:1px solid var(--border-d);border-radius:8px;overflow:hidden">
+              <iframe src="https://interactive-game-maps.github.io/grand_theft_auto_san_andreas/" style="width:100%;height:600px;border:none;display:block" allowfullscreen loading="lazy"></iframe>
+            </div>
+            <div>
+              <div class="map-card"><h4>Legend</h4><div class="map-legend"><div class="ml-item"><div class="ml-dot" style="background:#f08080"></div>Drug seizure</div><div class="ml-item"><div class="ml-dot" style="background:#7ab8ff"></div>Firearm seizure</div><div class="ml-item"><div class="ml-dot" style="background:var(--gold)"></div>Drug + Firearm</div></div></div>
+              <div class="map-card"><h4>Recent Locations</h4><div id="map-recent"><div style="color:var(--ts);font-size:13px">Loading...</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DISPATCH -->
+        <div class="tab-pane" id="tab-dispatch">
+          <div class="sec-hd" style="display:flex;align-items:center;justify-content:space-between">
+            <div><div class="tag">Live Activity</div><h2>Dispatch Centre</h2></div>
+            <button class="btn primary" id="dispatch-new-btn">📡 Log Call</button>
+          </div>
+          <div class="apps-filter" style="margin-bottom:1.25rem">
+            <button class="af-btn active" data-dfilter="active">Active Calls</button>
+            <button class="af-btn" data-dfilter="all">History</button>
+          </div>
+          <div class="tbl-wrap">
+            <div class="tbl-head"><h3>Dispatch Log</h3><span class="badge bg-gold" id="dispatch-count">0 Active</span></div>
+            <div style="overflow-x:auto"><table>
+              <thead><tr><th>Code</th><th>Details</th><th>Location</th><th>Officer</th><th>Status</th><th>Time</th><th></th></tr></thead>
+              <tbody id="dispatch-table"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">Loading...</td></tr></tbody>
+            </table></div>
+          </div>
+          <div style="margin-top:1rem;font-size:11px;color:var(--ts);text-align:center">📡 Manual entry for now — LUA in-game radio integration coming soon to auto-log codes.</div>
+
+          <div class="sec-hd" style="margin-top:2rem"><div class="tag">Reference</div><h2>Radio Code Reference</h2></div>
+          <div class="dispatch-ref-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem">
+            <div class="map-card" style="margin-bottom:0;max-height:340px;overflow-y:auto">
+              <h4>10-Codes</h4>
+              <div style="font-size:12px;line-height:1.9;color:var(--ts)">
+                <div><strong style="color:var(--gold)">10-1</strong> Transmitting poorly</div>
+                <div><strong style="color:var(--gold)">10-2</strong> Transmitting clearly</div>
+                <div><strong style="color:var(--gold)">10-3</strong> Stop transmitting</div>
+                <div><strong style="color:var(--gold)">10-4</strong> Message received</div>
+                <div><strong style="color:var(--gold)">10-6</strong> Off-duty, emergency only</div>
+                <div><strong style="color:var(--gold)">10-7</strong> Off-duty, unavailable</div>
+                <div><strong style="color:var(--gold)">10-8</strong> On-duty, active patrol</div>
+                <div><strong style="color:var(--gold)">10-9</strong> Repeat last transmission</div>
+                <div><strong style="color:var(--gold)">10-10</strong> Going out of town (Logging)</div>
+                <div><strong style="color:var(--gold)">10-15</strong> Suspect in custody</div>
+                <div><strong style="color:var(--gold)">10-15a</strong> Most wanted in custody</div>
+                <div><strong style="color:var(--gold)">10-16</strong> Requesting to patrol with another Officer</div>
+                <div><strong style="color:var(--gold)">10-19</strong> Returning to station</div>
+                <div><strong style="color:var(--gold)">10-20</strong> Location / What's your 20?</div>
+                <div><strong style="color:var(--gold)">10-23</strong> Arrival on scene</div>
+                <div><strong style="color:var(--gold)">10-26</strong> Traffic stop</div>
+                <div><strong style="color:var(--gold)">10-26a</strong> High-risk traffic stop</div>
+                <div><strong style="color:var(--gold)">10-29</strong> Wants/warrants check</div>
+                <div><strong style="color:var(--gold)">10-62</strong> Attempting P.I.T. maneuver</div>
+                <div><strong style="color:var(--gold)">10-71</strong> Shooting in progress</div>
+                <div><strong style="color:var(--gold)">10-76</strong> En-Route</div>
+                <div><strong style="color:var(--gold)">10-80</strong> Pursuit in progress</div>
+                <div><strong style="color:var(--gold)">10-88</strong> Requesting cover unit</div>
+                <div><strong style="color:var(--gold)">10-99</strong> End of situation</div>
+              </div>
+            </div>
+            <div class="map-card" style="margin-bottom:0;max-height:340px;overflow-y:auto">
+              <h4>11-Codes &amp; Status</h4>
+              <div style="font-size:12px;line-height:1.9;color:var(--ts)">
+                <div><strong style="color:var(--gold)">11-29</strong> Clear record (no warrants)</div>
+                <div><strong style="color:var(--gold)">11-41</strong> Ambulance required</div>
+                <div><strong style="color:var(--gold)">11-44</strong> Coroner's case (fatality)</div>
+                <div><strong style="color:var(--gold)">11-52</strong> Status check</div>
+                <div><strong style="color:var(--gold)">11-80</strong> Accident - Major injury</div>
+                <div><strong style="color:var(--gold)">11-81</strong> Accident - Minor injury</div>
+                <div><strong style="color:var(--gold)">11-82</strong> Accident - Property damage</div>
+                <div><strong style="color:var(--gold)">11-85</strong> Tow truck needed</div>
+                <div><strong style="color:var(--gold)">11-99a</strong> Officer in extreme danger</div>
+              </div>
+            </div>
+            <div class="map-card" style="margin-bottom:0;max-height:340px;overflow-y:auto">
+              <h4>Response Codes</h4>
+              <div style="font-size:12px;line-height:1.9;color:var(--ts)">
+                <div><strong style="color:var(--gold)">Code 0</strong> (Game crash)</div>
+                <div><strong style="color:var(--gold)">Code 1</strong> Routine response</div>
+                <div><strong style="color:var(--gold)">Code 2</strong> Urgent, no lights/siren</div>
+                <div><strong style="color:var(--gold)">Code 3</strong> Emergency, lights &amp; siren</div>
+                <div><strong style="color:var(--gold)">Code 4</strong> No further assistance needed</div>
+                <div><strong style="color:var(--gold)">Code 5</strong> Stakeout / Surveillance</div>
+                <div><strong style="color:var(--gold)">Code 6</strong> Stay out of area</div>
+                <div><strong style="color:var(--gold)">Code 10</strong> SWAT pre-call</div>
+                <div><strong style="color:var(--gold)">Code 11</strong> SWAT activation</div>
+                <div><strong style="color:var(--gold)">Code 37</strong> Subject/property wanted</div>
+                <div><strong style="color:var(--gold)">Code 99</strong> Mental health crisis</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DISPATCH NEW CALL MODAL -->
+        <div class="modal-overlay" id="dispatch-modal" style="display:none">
+          <div class="modal" style="max-width:480px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+              <div style="font-size:18px;font-weight:700">📡 Log Dispatch Call</div>
+              <button class="modal-close" id="dispatch-modal-close">✕</button>
+            </div>
+            <div id="dispatch-msg"></div>
+            <div class="fgrp"><label class="flbl">Code</label>
+              <select class="fi" id="dispatch-code">
+                <optgroup label="10-Codes">
+                  <option value="10-1">10-1 — Transmitting poorly</option>
+                  <option value="10-2">10-2 — Transmitting clearly</option>
+                  <option value="10-3">10-3 — Stop transmitting</option>
+                  <option value="10-4">10-4 — Message received</option>
+                  <option value="10-6">10-6 — Off-duty, emergency only</option>
+                  <option value="10-7">10-7 — Off-duty, unavailable</option>
+                  <option value="10-8">10-8 — On-duty, active patrol</option>
+                  <option value="10-9">10-9 — Repeat last transmission</option>
+                  <option value="10-10">10-10 — Going out of town (Logging)</option>
+                  <option value="10-15">10-15 — Suspect in custody</option>
+                  <option value="10-15a">10-15a — Most wanted in custody</option>
+                  <option value="10-16">10-16 — Requesting to patrol with another Officer</option>
+                  <option value="10-19">10-19 — Returning to station</option>
+                  <option value="10-20">10-20 — Location / What's your 20?</option>
+                  <option value="10-23" selected>10-23 — Arrival on scene</option>
+                  <option value="10-26">10-26 — Traffic stop</option>
+                  <option value="10-26a">10-26a — High-risk traffic stop</option>
+                  <option value="10-29">10-29 — Wants/warrants check</option>
+                  <option value="10-62">10-62 — Attempting P.I.T. maneuver</option>
+                  <option value="10-71">10-71 — Shooting in progress</option>
+                  <option value="10-76">10-76 — En-Route</option>
+                  <option value="10-80">10-80 — Pursuit in progress</option>
+                  <option value="10-88">10-88 — Requesting cover unit</option>
+                  <option value="10-99">10-99 — End of situation</option>
+                </optgroup>
+                <optgroup label="11-Codes & Status">
+                  <option value="11-29">11-29 — Clear record (no warrants)</option>
+                  <option value="11-41">11-41 — Ambulance required</option>
+                  <option value="11-44">11-44 — Coroner's case (fatality)</option>
+                  <option value="11-52">11-52 — Status check</option>
+                  <option value="11-80">11-80 — Accident - Major injury</option>
+                  <option value="11-81">11-81 — Accident - Minor injury</option>
+                  <option value="11-82">11-82 — Accident - Property damage</option>
+                  <option value="11-85">11-85 — Tow truck needed</option>
+                  <option value="11-99a">11-99a — Officer in extreme danger</option>
+                </optgroup>
+                <optgroup label="Response Codes">
+                  <option value="Code 0">Code 0 — (Game crash)</option>
+                  <option value="Code 1">Code 1 — Routine response</option>
+                  <option value="Code 2">Code 2 — Urgent, no lights/siren</option>
+                  <option value="Code 3">Code 3 — Emergency, lights & siren</option>
+                  <option value="Code 4">Code 4 — No further assistance needed</option>
+                  <option value="Code 5">Code 5 — Stakeout / Surveillance</option>
+                  <option value="Code 6">Code 6 — Stay out of area</option>
+                  <option value="Code 10">Code 10 — SWAT pre-call</option>
+                  <option value="Code 11">Code 11 — SWAT activation</option>
+                  <option value="Code 37">Code 37 — Subject/property wanted</option>
+                  <option value="Code 99">Code 99 — Mental health crisis</option>
+                </optgroup>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="fgrp"><label class="flbl">Details</label><input class="fi" type="text" id="dispatch-details" placeholder="e.g. Possible narcotics activity"></div>
+            <div class="fgrp"><label class="flbl">Location</label><input class="fi" type="text" id="dispatch-location" placeholder="e.g. Ocean Docks"></div>
+            <div class="fgrp"><label class="flbl">Status</label>
+              <select class="fi" id="dispatch-status">
+                <option value="active">Active</option>
+                <option value="en_route">En Route</option>
+                <option value="on_scene">On Scene</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </div>
+            <button class="sbtn" id="dispatch-submit-btn">Log Call</button>
+          </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="tab-pane" id="tab-stats">
+          <div class="sec-hd"><div class="tag">Personal</div><h2>My Contribution</h2></div>
+          <div class="sg">
+            <div class="sc"><div class="sc-lbl">📦 My Seizures</div><div class="sc-val gold" id="st-seizures">—</div></div>
+            <div class="sc"><div class="sc-lbl">💰 Total Value</div><div class="sc-val green" id="st-value">—</div></div>
+            <div class="sc"><div class="sc-lbl">🚔 Arrests Made</div><div class="sc-val red" id="st-arrests">—</div></div>
+            <div class="sc"><div class="sc-lbl">🔫 Firearms</div><div class="sc-val gold" id="st-firearms">—</div></div>
+          </div>
+          <div class="sg">
+            <div class="sc"><div class="sc-lbl">🌿 Drug Seizures</div><div class="sc-val gold" id="st-drugs">—</div></div>
+            <div class="sc"><div class="sc-lbl">⚖️ Top Drug</div><div class="sc-val gold" id="st-topdrug">—</div></div>
+            <div class="sc"><div class="sc-lbl">📍 Top Area</div><div class="sc-val gold" id="st-area">—</div></div>
+            <div class="sc"><div class="sc-lbl">🏅 Unit Rank</div><div class="sc-val gold" id="st-rank">—</div></div>
+          </div>
+          <div class="sec-hd" style="margin-top:1rem"><div class="tag">History</div><h2>My Recent Logs</h2></div>
+          <div id="my-logs"></div>
+        </div>
+
+        <!-- ANALYTICS -->
+        <div class="tab-pane" id="tab-analytics">
+          <div class="sec-hd"><div class="tag">Unit Performance</div><h2>Analytics</h2></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
+            <div class="map-card" style="margin-bottom:0">
+              <h4>📈 Monthly Seizures</h4>
+              <canvas id="chart-monthly" height="220"></canvas>
+            </div>
+            <div class="map-card" style="margin-bottom:0">
+              <h4>🌿 Drug Trends</h4>
+              <canvas id="chart-drugs" height="220"></canvas>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+            <div class="map-card" style="margin-bottom:0">
+              <h4>🏅 Officer Leaderboard</h4>
+              <canvas id="chart-leaderboard" height="220"></canvas>
+            </div>
+            <div class="map-card" style="margin-bottom:0">
+              <h4>🚔 Arrest Trends</h4>
+              <canvas id="chart-arrests" height="220"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIL -->
+        <div class="tab-pane" id="tab-mail">
+          <div class="mail-wrap">
+            <div class="mail-sidebar">
+              <div class="mail-sb-top">
+                <span class="mail-sb-lbl">Mailbox</span>
+                <button class="btn primary" id="compose-btn" style="font-size:12px;padding:5px 12px">✉ Compose</button>
+              </div>
+              <div style="padding:.75rem">
+                <button class="mail-folder-btn active" data-folder="inbox">📥 Inbox <span id="inbox-count" style="margin-left:auto;background:var(--gold);color:#0a0c0f;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700"></span></button>
+                <button class="mail-folder-btn" data-folder="sent">📤 Sent</button>
+                <button class="mail-folder-btn" data-folder="application">📋 My Application</button>
+              </div>
+              <div class="mail-list" id="mail-list"></div>
+            </div>
+            <div class="mail-right">
+              <div class="mail-view" id="mail-view"><div style="text-align:center;padding:4rem;color:var(--ts)"><div style="font-size:40px;margin-bottom:12px">✉️</div><p>Select a message to read</p></div></div>
+              <div id="mail-reply" style="display:none" class="mail-reply">
+                <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:12px">Reply</div>
+                <textarea class="fi" id="reply-body" style="min-height:80px;margin-bottom:10px" placeholder="Type your reply..."></textarea>
+                <div style="display:flex;justify-content:flex-end"><button class="sbtn" id="send-reply-btn" style="width:auto;padding:8px 20px">Send Reply ↗</button></div>
+              </div>
+              <div id="compose-pane" style="display:none" class="mail-reply">
+                <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:12px">New Message</div>
+                <div class="fgrp"><label class="flbl">To (Officer name or badge)</label><input class="fi" type="text" id="compose-to" placeholder="e.g. Officer Martinez or V-4821"></div>
+                <div class="fgrp"><label class="flbl">Subject</label><input class="fi" type="text" id="compose-subject" placeholder="Subject..."></div>
+                <div class="fgrp"><label class="flbl">Message</label><textarea class="fi" id="compose-body" style="min-height:100px" placeholder="Type your message..."></textarea></div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                  <button class="btn" id="cancel-compose-btn">Cancel</button>
+                  <button class="sbtn" id="send-compose-btn" style="width:auto;padding:8px 20px">Send ↗</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- APPS -->
+        <div class="tab-pane" id="tab-apps">
+          <div class="sec-hd"><div class="tag">Applications</div><h2>Membership Applications</h2></div>
+          <div class="apps-filter">
+            <button class="af-btn active" data-filter="all">All</button>
+            <button class="af-btn" data-filter="pending">Pending</button>
+            <button class="af-btn" data-filter="approved">Approved</button>
+            <button class="af-btn" data-filter="rejected">Rejected</button>
+          </div>
+          <div id="apps-list"></div>
+        </div>
+
+        <!-- USERS -->
+        <div class="tab-pane" id="tab-users">
+          <div class="sec-hd"><div class="tag">Administration</div><h2>Officer Roster</h2></div>
+          <div id="users-list"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOG VIEW/EDIT MODAL -->
+<div class="modal-overlay" id="log-modal" style="display:none">
+  <div class="modal" style="max-width:720px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div id="modal-title" style="font-size:18px;font-weight:700"></div>
+      <button class="modal-close" id="log-modal-close">✕</button>
+    </div>
+    <div id="modal-summary" style="display:flex;align-items:center;justify-content:space-between;background:rgba(201,168,76,.08);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;margin-bottom:1.5rem">
+      <div id="modal-summary-left" style="display:flex;gap:8px;align-items:center"></div>
+      <div style="text-align:right">
+        <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ts)">Street Value</div>
+        <div id="modal-summary-value" style="font-size:22px;font-weight:800;color:var(--gold)"></div>
+      </div>
+    </div>
+
+    <div id="modal-body">
+      <!-- Officer + Badge -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div><div class="modal-lbl">Officer Name</div><div class="fi" style="background:var(--navy);pointer-events:none" id="mv-officer"></div></div>
+        <div><div class="modal-lbl">Badge Number</div><div class="fi" style="background:var(--navy);pointer-events:none" id="mv-badge"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div><div class="modal-lbl">Drugs Seized</div><div class="fi" style="background:var(--navy);pointer-events:none" id="mv-drug"></div></div>
+        <div><div class="modal-lbl">Quantity</div><div class="fi" style="background:var(--navy);pointer-events:none" id="mv-qty"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div><div class="modal-lbl">Firearms Seized</div><div class="fi" style="background:var(--navy);pointer-events:none" id="mv-firearm"></div></div>
+        <div><div class="modal-lbl">Firearms Count</div><div class="fi" style="background:var(--navy);pointer-events:none" id="mv-fqty"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div><div class="modal-lbl">Arrests Made</div><div class="fi" style="background:var(--navy);pointer-events:none" id="mv-arrests"></div></div>
+        <div><div class="modal-lbl">Location</div><div class="fi" style="background:var(--navy);pointer-events:none" id="mv-location"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div><div class="modal-lbl">Operation Type</div><div class="fi" style="background:var(--navy);pointer-events:none" id="mv-optype"></div></div>
+        <div><div class="modal-lbl">Date</div><div class="fi" style="background:var(--navy);pointer-events:none" id="mv-date"></div></div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div class="modal-lbl">Notes / Narrative</div>
+        <div class="fi" style="background:var(--navy);pointer-events:none;min-height:60px;white-space:pre-wrap" id="mv-notes"></div>
+      </div>
+      <div id="mv-arrested"></div>
+    </div>
+
+    <div id="modal-edit" style="display:none">
+      <div class="modal-divider"></div>
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:1rem">✏️ Edit Log</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div class="fgrp"><label class="flbl">Est. Street Value ($)</label><input class="fi" type="number" id="edit-value"></div>
+        <div class="fgrp"><label class="flbl">Location</label><input class="fi" type="text" id="edit-location"></div>
+      </div>
+      <div class="fgrp"><label class="flbl">Operation Type</label>
+        <select class="fi" id="edit-optype">
+          <option>Traffic Stop</option><option>Search Warrant</option><option>Undercover Operation</option>
+          <option>Surveillance</option><option>Tip-off / Informant</option><option>Patrol Encounter</option><option>Other</option>
+        </select>
+      </div>
+      <div class="fgrp"><label class="flbl">Notes / Narrative</label><textarea class="fi" id="edit-notes" style="min-height:80px"></textarea></div>
+      <div id="edit-msg"></div>
+      <div style="display:flex;gap:8px">
+        <button class="sbtn" id="edit-save-btn" style="flex:1">Save Changes</button>
+        <button class="btn danger" id="modal-del-btn" style="padding:11px 20px">🗑️ Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
-window.SUPABASE_URL = "https://twdgwnbvpuwjwbbjfack.supabase.co";
-window.SUPABASE_ANON_KEY = "sb_publishable_LzF2eh8Nvf8iGX0-5_izKw_7yuwV0Hw";
-
-window.sb = supabase.createClient(
-  window.SUPABASE_URL,
-  window.SUPABASE_ANON_KEY
-);
-
-document.getElementById("loginForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
-
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  const { error } = await window.sb.auth.signInWithPassword({
-    email: email,
-    password: password
+// ═══════════════════════════════════════════════════
+// SUPABASE — created lazily on first use
+// ═══════════════════════════════════════════════════
+const SB_URL  = 'https://ojbyfbdtcaanagrlhyug.supabase.co';
+const SB_ANON = 'sb_publishable__Q5Njb2pCjESLHDLW11SAw_ory8molh';
+let _sb = null;
+function db() {
+  if (!_sb) _sb = supabase.createClient(SB_URL, SB_ANON, {
+    auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true }
   });
+  return _sb;
+}
 
-  if (error) {
-    document.getElementById("message").innerText = error.message;
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let me = null;      // auth user
+let officer = null; // officer profile
+let mailFolder = 'inbox';
+let mailMsgId  = null;
+let appsFilter = 'all';
+
+// ═══════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════
+const DRUG_PRICES = {'Cocaine':70,'Marijuana':40};
+const DRUGS = Object.keys(DRUG_PRICES);
+const FIREARMS = ['SD Pistol','Deagle','Combat Shotgun','MP5','Tec9','Mac-10','Sniper'];
+const CHARGES = ['Aiding a Prison Break','Aiding and Abetting','Assault','Attempted Murder','Battery','Brandishing a Weapon in Public','Bribery','Conspiracy','Criminal Negligence','Criminal Trespassing','Cultivation/Manufacture/Delivery of a Controlled Substance','Destruction of Public Property','Destruction/Falsification of Evidence','Discharge of a Firearm in Public','Disturbance of Peace','Driving Over the Speed Limit','Evading a Law Enforcement Officer','Excessive Use of Force (Force Matrix Violation)','Extortion','FCC Policy Violation','Failing to Act in Aid of a Government Employee','Failure to Follow Sentencing Guidelines','Failure to Identify','Failure to Pay a Ticket','False Imprisonment','Flight Protocol Violation','Fraud','Grand Theft Auto','Impersonating a Government Employee','Indecency','Kidnapping','Malfeasance in Public Office','Misuse of (911) Emergency Hotline','Misuse of Government Issued Equipment','Murder','Mutual Combat','Obstructing a Government Employee','Operating a Vehicle Without a License','Pandering/Pimping','Parking Violation','Possession of a Controlled Substance','Possession of a Controlled Substance With Intent to Sell','Possession of an Illegal Firearm','Prison Break','Prostitution','Reckless Driving','Resisting a Law Enforcement Officer','Riot','Robbery','Sexual Assault','Sexual Battery','Terrorism','Torture','Transporting Illegal Goods','Trespassing','Unlawful Assembly','Unlawful Distribution of a Weapon','Vandalism','Vehicular Assault','Vigilantism'];
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const fmtDate = iso => new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+const fmtVal  = n => { n=Number(n)||0; if(n>=1e6)return'$'+(n/1e6).toFixed(1)+'M'; if(n>=1000)return'$'+Math.round(n/1000)+'k'; return'$'+n.toLocaleString(); };
+
+function showMsg(id, text, type) {
+  const el = $(id);
+  if (!el) return;
+  el.innerHTML = '';
+  const d = document.createElement('div');
+  d.className = 'msg msg-' + (type === 'ok' ? 'ok' : 'err');
+  d.textContent = text;
+  el.appendChild(d);
+}
+function clearMsg(id) { const el=$(id); if(el) el.innerHTML=''; }
+
+function makeSelect(opts, cls, placeholder) {
+  const s = document.createElement('select');
+  s.className = 'fi' + (cls ? ' ' + cls : '');
+  if (placeholder) {
+    const o = document.createElement('option');
+    o.value = ''; o.textContent = placeholder;
+    s.appendChild(o);
+  }
+  opts.forEach(val => {
+    const o = document.createElement('option');
+    o.value = val; o.textContent = val;
+    s.appendChild(o);
+  });
+  return s;
+}
+
+function rmBtn(onclick) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'rm';
+  b.textContent = '✕';
+  b.addEventListener('click', onclick);
+  return b;
+}
+
+// ═══════════════════════════════════════════════════
+// PAGES
+// ═══════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pg = $('pg-' + name);
+  if (pg) pg.classList.add('active');
+  const bg = $('pfbg');
+  if (bg) bg.style.display = (name === 'public') ? 'block' : 'none';
+  if (name === 'public') loadPublicStats();
+}
+
+// ═══════════════════════════════════════════════════
+// NAV WIRING
+// ═══════════════════════════════════════════════════
+$('nav-public').addEventListener('click',   () => showPage('public'));
+$('nav-apply').addEventListener('click',    () => showPage('apply'));
+$('nav-handbook').addEventListener('click', () => showPage('handbook'));
+$('nav-dash').addEventListener('click',     () => showPage('dash'));
+$('nav-login').addEventListener('click',    () => showPage('login'));
+
+// ═══════════════════════════════════════════════════
+// AUTH TABS
+// ═══════════════════════════════════════════════════
+$('tab-signin').addEventListener('click', () => {
+  $('tab-signin').classList.add('active');
+  $('tab-register').classList.remove('active');
+  $('signin-form').style.display = 'block';
+  $('reg-form').style.display = 'none';
+  clearMsg('auth-msg');
+});
+$('tab-register').addEventListener('click', () => {
+  $('tab-register').classList.add('active');
+  $('tab-signin').classList.remove('active');
+  $('reg-form').style.display = 'block';
+  $('signin-form').style.display = 'none';
+  clearMsg('auth-msg');
+});
+
+// ═══════════════════════════════════════════════════
+// SIGN IN
+// ═══════════════════════════════════════════════════
+$('si-btn').addEventListener('click', async () => {
+  const email = $('si-email').value.trim();
+  const pass  = $('si-pass').value;
+  if (!email || !pass) return showMsg('auth-msg', 'Enter your email and password.', 'err');
+  $('si-btn').disabled = true;
+  $('si-btn').textContent = 'Signing in…';
+  const { data, error } = await db().auth.signInWithPassword({ email, password: pass });
+  $('si-btn').disabled = false;
+  $('si-btn').textContent = 'Sign In to Portal';
+  if (error) return showMsg('auth-msg', error.message, 'err');
+  me = data.user;
+  sessionStorage.setItem('vs', JSON.stringify(data.session));
+  await loadProfile();
+});
+
+$('si-pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('si-btn').click(); });
+
+// ═══════════════════════════════════════════════════
+// REGISTER
+// ═══════════════════════════════════════════════════
+$('reg-btn').addEventListener('click', async () => {
+  const name  = $('reg-name').value.trim();
+  const badge = $('reg-badge').value.trim().toUpperCase();
+  const rank  = $('reg-rank').value;
+  const email = $('reg-email').value.trim();
+  const pass  = $('reg-pass').value;
+  const pass2 = $('reg-pass2').value;
+  if (!name||!badge||!email||!pass) return showMsg('auth-msg','All fields required.','err');
+  if (pass.length < 8) return showMsg('auth-msg','Password min 8 characters.','err');
+  if (pass !== pass2)  return showMsg('auth-msg','Passwords do not match.','err');
+  $('reg-btn').disabled = true; $('reg-btn').textContent = 'Creating…';
+  const { data, error } = await db().auth.signUp({ email, password: pass });
+  if (error) { $('reg-btn').disabled=false; $('reg-btn').textContent='Create Account'; return showMsg('auth-msg',error.message,'err'); }
+  const uid = data.user?.id;
+  if (!uid) { $('reg-btn').disabled=false; $('reg-btn').textContent='Create Account'; return showMsg('auth-msg','Account created — please sign in.','ok'); }
+  await db().auth.signInWithPassword({ email, password: pass });
+  const { data: existing } = await db().from('officers').select('id').limit(1);
+  const isFirst = !existing || existing.length === 0;
+  const { error: insErr } = await db().from('officers').insert({ id:uid, name, badge, rank, role: isFirst?'admin':'officer' });
+  $('reg-btn').disabled=false; $('reg-btn').textContent='Create Account';
+  if (insErr) return showMsg('auth-msg','Profile error: '+insErr.message,'err');
+  me = (await db().auth.getUser()).data.user;
+  showMsg('auth-msg', `Welcome, ${name}!${isFirst?' Admin access granted.':''}`, 'ok');
+  setTimeout(() => loadProfile(), 800);
+});
+
+// ═══════════════════════════════════════════════════
+// LOAD PROFILE & SHOW DASHBOARD
+// ═══════════════════════════════════════════════════
+async function loadProfile() {
+  if (!me) return;
+  const { data } = await db().from('officers').select('*').eq('id', me.id).single();
+  officer = data;
+  if (!officer) return showMsg('auth-msg', 'Officer profile not found. Contact an admin.', 'err');
+  if (!officer.verified && officer.role !== 'admin') {
+    showMsg('auth-msg', '⏳ Your account is pending verification by an admin. You will be able to log in once approved.', 'err');
+    await db().auth.signOut(); sessionStorage.removeItem('vs'); me = null; officer = null;
     return;
   }
 
-  window.location.href = "dashboard.html";
+  $('nav-login').style.display  = 'none';
+  $('nav-dash').style.display   = '';
+  $('dash-welcome').textContent = `Welcome back, ${officer.rank} ${officer.name.split(' ')[0]}`;
+  $('dash-rank-badge').textContent = officer.rank;
+  $('duty-meta').textContent = `Badge: ${officer.badge}`;
+
+  if (officer.role === 'admin') {
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+  }
+
+  showPage('dash');
+  loadDashLogs();
+  checkNotifications();
+}
+
+async function checkNotifications() {
+  if (!officer || !me) return;
+
+  // Unread mail count
+  const { data: msgs } = await db().from('messages').select('id,read').eq('to_id', me.id);
+  const unreadMail = (msgs||[]).filter(m => !m.read).length;
+  const mailBadge = $('sb-mail-badge');
+  if (mailBadge) {
+    if (unreadMail > 0) { mailBadge.textContent = unreadMail; mailBadge.style.display = ''; }
+    else mailBadge.style.display = 'none';
+  }
+
+  // Pending applications (admin only)
+  if (officer.role === 'admin') {
+    const { data: apps } = await db().from('applications').select('id,status');
+    const pendingApps = (apps||[]).filter(a => !a.status || a.status === 'pending').length;
+    const appsBadge = $('sb-apps-badge');
+    if (appsBadge) {
+      if (pendingApps > 0) { appsBadge.textContent = pendingApps; appsBadge.style.display = ''; }
+      else appsBadge.style.display = 'none';
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// LOGOUT
+// ═══════════════════════════════════════════════════
+$('logout-btn').addEventListener('click', async () => {
+  await db().auth.signOut();
+  sessionStorage.removeItem('vs');
+  me = null; officer = null;
+  $('nav-login').style.display = '';
+  $('nav-dash').style.display  = 'none';
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+  showPage('public');
+});
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD TABS
+// ═══════════════════════════════════════════════════
+document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    $('tab-' + btn.dataset.tab).classList.add('active');
+    const t = btn.dataset.tab;
+    if (t === 'logs')  loadDashLogs();
+    if (t === 'map')   loadMap();
+    if (t === 'dispatch') loadDispatch();
+    if (t === 'stats') loadStats();
+    if (t === 'analytics') loadAnalytics();
+    if (t === 'mail')  loadMail('inbox');
+    if (t === 'apps')  loadApps();
+    if (t === 'users') loadUsers();
+  });
+});
+
+// ═══════════════════════════════════════════════════
+// PUBLIC STATS
+// ═══════════════════════════════════════════════════
+async function loadPublicStats() {
+  const { data: logs } = await db().from('seizure_logs').select('value,arrests,qty,unit,created_at,log_type,firearm_qty');
+  if (!logs) return;
+  const totalVal  = logs.reduce((s,l) => s+(Number(l.value)||0), 0);
+  const totalArr  = logs.reduce((s,l) => s+(Number(l.arrests)||0), 0);
+  const now       = new Date();
+  const thisMonth = logs.filter(l => { const d=new Date(l.created_at); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear(); }).length;
+  const totalWt   = logs.reduce((s,l) => { const q=Number(l.qty)||0; if(l.unit==='kilograms')return s+q; if(l.unit==='grams')return s+q/1000; if(l.unit==='ounces')return s+q*0.028; return s+q/1000; }, 0);
+  const totalFA   = logs.filter(l=>l.log_type==='firearm'||l.log_type==='both').reduce((s,l)=>s+(Number(l.firearm_qty)||0),0);
+
+  $('hs-total').textContent   = logs.length;
+  $('hs-value').textContent   = fmtVal(totalVal);
+  $('hs-arrests').textContent = totalArr;
+  $('hs-month').textContent   = thisMonth;
+  // Sum total drug quantity (grams) across all seizures
+  const totalDrugQty = logs.filter(l=>l.log_type==='drug'||l.log_type==='both').reduce((s,l)=>{
+    const q = Number(l.qty)||0;
+    const u = l.unit||'grams';
+    if (u==='kilograms') return s+q*1000;
+    if (u==='ounces')    return s+Math.round(q*28.3);
+    return s+q;
+  },0);
+  $('pub-weight').textContent = totalDrugQty > 0 ? totalDrugQty + 'g' : '0g';
+  $('pub-firearms').textContent = totalFA;
+  $('pub-ops').textContent    = logs.length;
+  $('pub-rate').textContent   = logs.length&&totalArr ? Math.round((totalArr/logs.length)*100)+'%' : 'N/A';
+
+  const { data: recent } = await db().from('seizure_logs').select('drug,firearm,qty,unit,value,arrests,location,created_at,log_type,drug_detail,firearm_detail').order('created_at',{ascending:false}).limit(20);
+  const tbody = $('pub-table');
+  if (!tbody) return;
+  if (!recent?.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">No records yet.</td></tr>'; return; }
+  const rows = document.createDocumentFragment();
+  recent.forEach(l => {
+    const isF = l.log_type==='firearm'||l.log_type==='both';
+    const isD = l.log_type==='drug'||l.log_type==='both';
+    const typeLabel = isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
+    const typeCls   = isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';
+    const tr = document.createElement('tr');
+    // Build item + qty display from detail strings when available
+    const itemParts = [];
+    if (l.drug_detail) itemParts.push(l.drug_detail);
+    else if (l.drug) itemParts.push(l.drug);
+    if (l.firearm_detail) itemParts.push(l.firearm_detail);
+    else if (l.firearm) itemParts.push(l.firearm);
+    const itemDisplay = itemParts.join(' · ') || '—';
+    tr.innerHTML = `<td>${fmtDate(l.created_at)}</td><td><span class="badge ${typeCls}">${typeLabel}</span></td><td>${itemDisplay}</td><td class="td-val">${fmtVal(l.value)}</td><td>${l.location}</td><td><span class="badge ${l.arrests>0?'bg-green':'bg-blue'}">${l.arrests>0?l.arrests+' arrested':'Processing'}</span></td>`;
+    rows.appendChild(tr);
+  });
+  tbody.innerHTML = '';
+  tbody.appendChild(rows);
+}
+
+// ═══════════════════════════════════════════════════
+// DASH LOGS
+// ═══════════════════════════════════════════════════
+async function loadDashLogs() {
+  const { data: logs } = await db().from('seizure_logs').select('*').order('created_at',{ascending:false});
+  if (!logs) return;
+
+  const myLogs   = logs.filter(l => l.officer_id === me?.id);
+  const totalVal = logs.reduce((s,l) => s+(Number(l.value)||0), 0);
+  const totalArr = logs.reduce((s,l) => s+(Number(l.arrests)||0), 0);
+  $('my-seizures').textContent  = myLogs.length;
+  $('all-seizures').textContent = logs.length;
+  $('all-value').textContent    = fmtVal(totalVal);
+  $('all-arrests').textContent  = totalArr;
+
+  const logIds = logs.map(l => l.id);
+  let arrMap = {};
+  if (logIds.length) {
+    const { data: arr } = await db().from('log_arrestees').select('*').in('log_id', logIds);
+    (arr||[]).forEach(a => { if(!arrMap[a.log_id]) arrMap[a.log_id]=[]; arrMap[a.log_id].push(a); });
+  }
+
+  const container = $('logs-list');
+  if (!logs.length) { container.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>No seizure logs yet.</p></div>'; return; }
+
+  const frag = document.createDocumentFragment();
+  logs.forEach(l => {
+    const arrestees = arrMap[l.id] || [];
+    const isF = l.log_type==='firearm'||l.log_type==='both';
+    const isD = l.log_type==='drug'||l.log_type==='both';
+    const typeLabel = isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
+    const typeCls   = isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';
+    const itemParts = [];
+    if (l.drug_detail) itemParts.push(l.drug_detail);
+    else if (l.drug) itemParts.push(l.drug);
+    if (l.firearm_detail) itemParts.push(l.firearm_detail);
+    else if (l.firearm) itemParts.push(l.firearm);
+    const item = itemParts.join(' · ') || '—';
+
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.style.cursor = 'pointer';
+    entry.addEventListener('click', e => { if(!e.target.closest('.le-actions')) openLogModal(l, arrestees); });
+
+    const top = document.createElement('div');
+    top.className = 'le-top';
+    const left = document.createElement('div');
+    left.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="badge ${typeCls}">${typeLabel}</span><span class="badge bg-blue">${l.op_type||''}</span>${arrestees.length?`<span class="badge bg-red">${arrestees.length} Arrested</span>`:''}</div><h4>${item} · ${l.location}</h4>`;
+    const right = document.createElement('div');
+    right.style.cssText = 'text-align:right;flex-shrink:0;margin-left:12px';
+    right.innerHTML = `<div style="color:var(--gold);font-weight:700;font-size:16px">${fmtVal(l.value)}</div><div style="font-size:11px;color:var(--ts);margin-top:2px">${fmtDate(l.created_at)}</div>`;
+    top.appendChild(left); top.appendChild(right);
+
+    const meta = document.createElement('div');
+    meta.className = 'le-meta';
+    meta.innerHTML = `<span>👮 ${l.officer_name} (${l.officer_badge})</span><span style="color:var(--gold);margin-left:auto">🔍 Click to view full details</span>`;
+    meta.style.display = 'flex';
+    meta.style.alignItems = 'center';
+
+    entry.appendChild(top);
+    entry.appendChild(meta);
+
+    if (l.notes) {
+      const notes = document.createElement('div');
+      notes.className = 'le-notes';
+      notes.textContent = l.notes;
+      entry.appendChild(notes);
+    }
+
+    if (arrestees.length) {
+      const ad = document.createElement('div');
+      ad.style.cssText = 'margin-top:10px;padding-top:10px;border-top:1px solid var(--border-d)';
+      ad.innerHTML = `<div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:8px">🚔 Arrested Persons (${arrestees.length})</div>`;
+      arrestees.forEach((a,i) => {
+        const ar = document.createElement('div');
+        ar.style.cssText = 'background:rgba(10,12,15,.5);border:1px solid var(--border-d);border-radius:6px;padding:10px 14px;margin-bottom:6px';
+        ar.innerHTML = `<div style="font-size:13px;font-weight:600;margin-bottom:4px">${a.name||'Unknown'}</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>${a.evidence?`<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> ${a.evidence.startsWith('http')?`<a href="${a.evidence}" target="_blank" style="color:var(--gold)">View</a>`:a.evidence}</div>`:''}`;
+        ad.appendChild(ar);
+      });
+      entry.appendChild(ad);
+    }
+
+    if (officer?.role === 'admin') {
+      const actions = document.createElement('div');
+      actions.className = 'le-actions';
+      const del = document.createElement('button');
+      del.className = 'btn danger';
+      del.textContent = '🗑️ Delete';
+      del.addEventListener('click', () => deleteLog(l.id));
+      actions.appendChild(del);
+      entry.appendChild(actions);
+    }
+
+    frag.appendChild(entry);
+  });
+  container.innerHTML = '';
+  container.appendChild(frag);
+}
+
+function openLogModal(l, arrestees) {
+  const isF = l.log_type==='firearm'||l.log_type==='both';
+  const isD = l.log_type==='drug'||l.log_type==='both';
+  const typeLabel = isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
+  const canEdit = officer && (officer.id === l.officer_id || officer.role === 'admin');
+
+  $('modal-title').textContent = 'Seizure Log — ' + fmtDate(l.created_at);
+
+  // Summary banner
+  $('modal-summary-left').innerHTML = '<span class="badge ' + (isF&&isD?'bg-gold':isF?'bg-blue':'bg-red') + '">' + typeLabel + '</span><span class="badge bg-blue">' + (l.op_type||'—') + '</span>' + (arrestees.length ? '<span class="badge bg-red">' + arrestees.length + ' Arrested</span>' : '<span class="badge bg-green">No Arrests</span>');
+  $('modal-summary-value').textContent = fmtVal(l.value);
+
+  // Populate read-only fields
+  $('mv-officer').textContent  = l.officer_name || '—';
+  $('mv-badge').textContent    = l.officer_badge || '—';
+  $('mv-drug').textContent     = l.drug_detail || l.drug || '—';
+  $('mv-qty').textContent      = l.qty ? l.qty + ' ' + l.unit + ' total' : '—';
+  $('mv-firearm').textContent  = l.firearm_detail || l.firearm || '—';
+  $('mv-fqty').textContent     = l.firearm_qty || '—';
+  $('mv-arrests').textContent  = arrestees.length || 0;
+  $('mv-location').textContent = l.location || '—';
+  $('mv-optype').textContent   = l.op_type || '—';
+  $('mv-date').textContent     = fmtDate(l.created_at);
+  $('mv-notes').textContent    = l.notes || 'N/A';
+
+  // Arrested persons
+  const arDiv = $('mv-arrested');
+  arDiv.innerHTML = '';
+  if (arrestees.length) {
+    const hd = document.createElement('div');
+    hd.innerHTML = '<div class="modal-divider"></div><div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:1rem">🚔 Arrested Persons (' + arrestees.length + ')</div>';
+    arDiv.appendChild(hd);
+    arrestees.forEach(a => {
+      const ad = document.createElement('div');
+      ad.style.cssText = 'background:rgba(10,12,15,.5);border:1px solid var(--border-d);border-radius:6px;padding:10px 14px;margin-bottom:8px';
+      ad.innerHTML = '<div style="font-weight:600;margin-bottom:4px">' + (a.name||'Unknown') + '</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ' + (a.charges||'—') + '</div>' + (a.evidence?'<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> ' + (a.evidence.startsWith('http')?'<a href="'+a.evidence+'" target="_blank" style="color:var(--gold)">View</a>':a.evidence) + '</div>':'');
+      arDiv.appendChild(ad);
+    });
+  }
+
+  // Edit section
+  const editPane = $('modal-edit');
+  if (canEdit) {
+    editPane.style.display = 'block';
+    $('edit-value').value    = l.value || '';
+    $('edit-location').value = l.location || '';
+    $('edit-notes').value    = l.notes || '';
+    const opSel = $('edit-optype');
+    for (let i=0; i<opSel.options.length; i++) {
+      if (opSel.options[i].text === l.op_type) { opSel.selectedIndex = i; break; }
+    }
+    clearMsg('edit-msg');
+    $('edit-save-btn').onclick = () => saveLogEdit(l.id);
+    // Delete button — admin only
+    const delBtn = $('modal-del-btn');
+    if (officer?.role === 'admin') {
+      delBtn.style.display = '';
+      delBtn.onclick = () => { closeLogModal(); deleteLog(l.id); };
+    } else {
+      delBtn.style.display = 'none';
+    }
+  } else {
+    editPane.style.display = 'none';
+  }
+
+  $('log-modal').style.display = 'flex';
+}
+
+function closeLogModal() {
+  $('log-modal').style.display = 'none';
+}
+
+async function saveLogEdit(id) {
+  const value    = parseFloat($('edit-value').value);
+  const location = $('edit-location').value.trim();
+  const op_type  = $('edit-optype').value;
+  const notes    = $('edit-notes').value.trim();
+  if (!value||!location) return showMsg('edit-msg','Value and location are required.','err');
+  $('edit-save-btn').disabled = true; $('edit-save-btn').textContent = 'Saving…';
+  const { error } = await db().from('seizure_logs').update({ value, location, op_type, notes }).eq('id', id);
+  $('edit-save-btn').disabled = false; $('edit-save-btn').textContent = 'Save Changes';
+  if (error) return showMsg('edit-msg','Error: '+error.message,'err');
+  showMsg('edit-msg','✅ Saved!','ok');
+  loadDashLogs();
+}
+
+async function deleteLog(id) {
+  if (!confirm('Delete this log?')) return;
+  await db().from('seizure_logs').delete().eq('id', id);
+  loadDashLogs();
+}
+
+// ═══════════════════════════════════════════════════
+// ADD LOG FORM
+// ═══════════════════════════════════════════════════
+$('log-type').addEventListener('change', () => {
+  const t = $('log-type').value;
+  const hasDrug    = t === 'drug' || t === 'both';
+  const hasFirearm = t === 'firearm' || t === 'both';
+
+  $('drug-group').style.display    = hasDrug    ? 'block' : 'none';
+  $('firearm-group').style.display = hasFirearm ? 'block' : 'none';
+
+  if (hasFirearm && !$('firearm-rows').children.length) addFirearmRow();
+});
+
+$('add-drug-btn').addEventListener('click', addDrugRow);
+$('add-firearm-btn').addEventListener('click', addFirearmRow);
+$('add-arr-btn').addEventListener('click', addArresteeRow);
+$('log-submit').addEventListener('click', submitLog);
+
+function addDrugRow(preset) {
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  const sel  = makeSelect(DRUGS, 'drug-sel', preset ? null : '— Drug —');
+  if (preset) sel.value = preset;
+  const qty  = document.createElement('input');
+  qty.className = 'fi drug-qty'; qty.type = 'number'; qty.placeholder = 'Qty (grams)'; qty.min = '0';
+  const unit = makeSelect(['grams','ounces','kilograms','units'], 'drug-unit');
+  unit.style.width = '110px';
+  qty.addEventListener('input', calcStreetValue);
+  sel.addEventListener('change', calcStreetValue);
+  unit.addEventListener('change', calcStreetValue);
+  row.appendChild(sel);
+  row.appendChild(qty);
+  row.appendChild(unit);
+  row.appendChild(rmBtn(() => row.remove()));
+  $('drug-rows').appendChild(row);
+}
+function addFirearmRow() {
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  const sel = makeSelect(FIREARMS, 'fa-sel', '— Firearm —');
+  const qty = document.createElement('input');
+  qty.className = 'fi fa-qty'; qty.type = 'number'; qty.value = '1'; qty.min = '1'; qty.style.width = '80px'; qty.title = 'Qty';
+  row.appendChild(sel);
+  row.appendChild(qty);
+  row.appendChild(rmBtn(() => row.remove()));
+  $('firearm-rows').appendChild(row);
+}
+
+function addArresteeRow() {
+  const placeholder = $('arr-rows').querySelector('[style*="italic"]');
+  if (placeholder) placeholder.remove();
+  const idx = $('arr-rows').children.length;
+
+  const row = document.createElement('div');
+  row.className = 'arr-row';
+
+  // Header
+  const hd = document.createElement('div');
+  hd.className = 'arr-head';
+  const lbl = document.createElement('span');
+  lbl.style.cssText = 'font-size:12px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:1px';
+  lbl.textContent = 'Person ' + (idx+1);
+  const rmb = document.createElement('button');
+  rmb.type = 'button'; rmb.style.cssText = 'background:none;border:none;color:#f08080;cursor:pointer;font-size:13px';
+  rmb.textContent = '✕ Remove';
+  rmb.addEventListener('click', () => { row.remove(); renumberArrestees(); });
+  hd.appendChild(lbl); hd.appendChild(rmb);
+
+  // Name + Evidence
+  const fr = document.createElement('div');
+  fr.className = 'frow'; fr.style.marginBottom = '10px';
+  const ng = document.createElement('div'); ng.className='fgrp'; ng.style.margin='0';
+  const nl = document.createElement('label'); nl.className='flbl'; nl.textContent='Full Name *';
+  const ni = document.createElement('input'); ni.className='fi arr-name'; ni.type='text'; ni.placeholder='e.g. Marcus Johnson';
+  ng.appendChild(nl); ng.appendChild(ni);
+  const eg = document.createElement('div'); eg.className='fgrp'; eg.style.margin='0';
+  const el = document.createElement('label'); el.className='flbl'; el.textContent='Evidence *';
+  const ei = document.createElement('input'); ei.className='fi arr-ev'; ei.type='text'; ei.placeholder='e.g. https://imgur.com/...';
+  eg.appendChild(el); eg.appendChild(ei);
+  fr.appendChild(ng); fr.appendChild(eg);
+
+  // Charges
+  const cg = document.createElement('div');
+  cg.className = 'fgrp'; cg.style.margin = '0';
+  const ch = document.createElement('div');
+  ch.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px';
+  const cl = document.createElement('label'); cl.className='flbl'; cl.style.margin='0';
+  cl.innerHTML = 'Charges * <span style="color:var(--ts);font-weight:400">(max 6)</span>';
+  const cab = document.createElement('button'); cab.type='button'; cab.className='btn'; cab.style.cssText='font-size:11px;padding:2px 10px';
+  cab.textContent = '+ Add Charge';
+  cab.addEventListener('click', () => addChargeLine(cab));
+  ch.appendChild(cl); ch.appendChild(cab);
+  const clist = document.createElement('div'); clist.className='charge-list';
+  clist.appendChild(makeChargeLine(false));
+  cg.appendChild(ch); cg.appendChild(clist);
+
+  row.appendChild(hd); row.appendChild(fr); row.appendChild(cg);
+  $('arr-rows').appendChild(row);
+}
+
+function makeChargeLine(removable) {
+  const line = document.createElement('div');
+  line.className = 'charge-line';
+  const sel = makeSelect(CHARGES, 'charge-sel', '— Select charge —');
+  line.appendChild(sel);
+  if (removable) line.appendChild(rmBtn(() => line.remove()));
+  return line;
+}
+
+function addChargeLine(btn) {
+  const list = btn.closest('.fgrp').querySelector('.charge-list');
+  if (list.querySelectorAll('.charge-line').length >= 6) { alert('Maximum 6 charges per person.'); return; }
+  list.appendChild(makeChargeLine(true));
+}
+
+function renumberArrestees() {
+  $('arr-rows').querySelectorAll('.arr-row').forEach((r,i) => {
+    const lbl = r.querySelector('.arr-head span');
+    if (lbl) lbl.textContent = 'Person ' + (i+1);
+  });
+}
+
+function calcStreetValue() {
+  let total = 0;
+  $('drug-rows').querySelectorAll('.item-row').forEach(r => {
+    const drug = r.querySelector('.drug-sel')?.value;
+    const qty  = parseFloat(r.querySelector('.drug-qty')?.value) || 0;
+    const unit = r.querySelector('.drug-unit')?.value;
+    const price = DRUG_PRICES[drug];
+    if (!price || !qty) return;
+    const grams = unit === 'kilograms' ? qty * 1000 : unit === 'ounces' ? qty * 28.3 : qty;
+    total += Math.round(grams * price);
+  });
+  if (total > 0) $('log-value').value = total;
+}
+
+async function submitLog() {
+  const type     = $('log-type').value;
+  const value    = parseFloat($('log-value').value);
+  const location = $('log-location').value.trim();
+  const op_type  = $('log-optype').value;
+  const notes    = $('log-notes').value.trim();
+  if (!type)           return showMsg('add-log-msg','Please select a seizure type.','err');
+  if (!value||!location) return showMsg('add-log-msg','Street value and location are required.','err');
+
+  const drugs = [];
+  $('drug-rows').querySelectorAll('.item-row').forEach(r => {
+    const d = r.querySelector('.drug-sel')?.value;
+    const q = parseFloat(r.querySelector('.drug-qty')?.value)||0;
+    const u = r.querySelector('.drug-unit')?.value;
+    if (d) drugs.push({drug:d,qty:q,unit:u});
+  });
+  const firearms = [];
+  $('firearm-rows').querySelectorAll('.item-row').forEach(r => {
+    const f = r.querySelector('.fa-sel')?.value;
+    const q = parseInt(r.querySelector('.fa-qty')?.value)||1;
+    if (f) firearms.push({firearm:f,qty:q});
+  });
+
+  const arrestees = [];
+  for (const row of $('arr-rows').querySelectorAll('.arr-row')) {
+    const name    = row.querySelector('.arr-name')?.value.trim();
+    const ev      = row.querySelector('.arr-ev')?.value.trim();
+    const charges = Array.from(row.querySelectorAll('.charge-sel')).map(s=>s.value).filter(Boolean);
+    if (!name||!ev||!charges.length) return showMsg('add-log-msg','Complete all fields for each arrested person.','err');
+    arrestees.push({name, evidence:ev, charges:charges.join(', ')});
+  }
+
+  const btn = $('log-submit');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  const drugDetail    = drugs.map(d => d.drug + ': ' + d.qty + (d.unit==='units'?' units':d.unit==='kilograms'?'kg':d.unit==='ounces'?'oz':'g')).join(', ') || null;
+  const firearmDetail = firearms.map(f => f.firearm + ' x' + f.qty).join(', ') || null;
+
+  const { data: newLog, error } = await db().from('seizure_logs').insert({
+    officer_id: me.id, officer_name: officer.name, officer_badge: officer.badge,
+    log_type: type,
+    drug:        drugs.map(d=>d.drug).join(', ')||null,
+    drug_detail: drugDetail,
+    firearm:        firearms.map(f=>f.firearm).join(', ')||null,
+    firearm_detail: firearmDetail,
+    qty:      drugs.reduce((s,d)=>s+(d.qty||0),0)||null,
+    unit:     drugs[0]?.unit||'grams',
+    firearm_qty: firearms.reduce((s,f)=>s+f.qty,0)||null,
+    value, arrests: arrestees.length, location, op_type, notes
+  }).select('id').single();
+
+  btn.disabled = false; btn.textContent = 'Submit Seizure Log';
+  if (error) return showMsg('add-log-msg','Error: '+error.message,'err');
+
+  if (arrestees.length && newLog?.id) {
+    await db().from('log_arrestees').insert(arrestees.map(a => ({log_id:newLog.id,...a})));
+  }
+
+  showMsg('add-log-msg','✅ Seizure log submitted!','ok');
+  $('log-type').value = ''; $('log-value').value = ''; $('log-location').value = ''; $('log-notes').value = '';
+  $('drug-rows').innerHTML = ''; $('firearm-rows').innerHTML = '';
+  $('drug-group').style.display = 'none'; $('firearm-group').style.display = 'none';
+  $('arr-rows').innerHTML = '<div style="color:var(--ts);font-size:13px;text-align:center;padding:1rem 0;font-style:italic">No arrests — click "Add Person" if arrests were made.</div>';
+
+  setTimeout(() => {
+    clearMsg('add-log-msg');
+    document.querySelector('.sb-btn[data-tab="logs"]').click();
+  }, 1200);
+}
+
+// ═══════════════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════════════
+async function loadMap() {
+  const { data: logs } = await db().from('seizure_logs').select('location,drug,firearm,value,created_at').order('created_at',{ascending:false}).limit(8);
+  const el = $('map-recent');
+  if (!logs?.length) { el.textContent = 'No logs yet.'; return; }
+  const frag = document.createDocumentFragment();
+  logs.forEach(l => {
+    const d = document.createElement('div');
+    d.style.cssText = 'font-size:12px;padding:8px 0;border-bottom:1px solid var(--border-d)';
+    d.innerHTML = `<strong style="display:block;color:var(--tp)">${l.drug||l.firearm||'Unknown'}</strong><span style="color:var(--ts)">${l.location} · ${fmtDate(l.created_at)}</span>`;
+    frag.appendChild(d);
+  });
+  el.innerHTML = '';
+  el.appendChild(frag);
+}
+
+// ═══════════════════════════════════════════════════
+// DISPATCH CENTRE
+// ═══════════════════════════════════════════════════
+let dispatchFilter = 'active';
+
+document.querySelectorAll('.af-btn[data-dfilter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.af-btn[data-dfilter]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    dispatchFilter = btn.dataset.dfilter;
+    loadDispatch();
+  });
+});
+
+$('dispatch-new-btn').addEventListener('click', () => {
+  $('dispatch-code').selectedIndex = 0;
+  $('dispatch-details').value = '';
+  $('dispatch-location').value = '';
+  $('dispatch-status').value = 'active';
+  clearMsg('dispatch-msg');
+  $('dispatch-modal').style.display = 'flex';
+});
+$('dispatch-modal-close').addEventListener('click', () => { $('dispatch-modal').style.display = 'none'; });
+$('dispatch-modal').addEventListener('click', e => { if (e.target === $('dispatch-modal')) $('dispatch-modal').style.display = 'none'; });
+
+$('dispatch-submit-btn').addEventListener('click', async () => {
+  const code     = $('dispatch-code').value;
+  const details  = $('dispatch-details').value.trim();
+  const location = $('dispatch-location').value.trim();
+  const status   = $('dispatch-status').value;
+  if (!details || !location) return showMsg('dispatch-msg', 'Details and location are required.', 'err');
+
+  const btn = $('dispatch-submit-btn');
+  btn.disabled = true; btn.textContent = 'Logging…';
+  const { data, error } = await db().from('dispatch_calls').insert({
+    code, details, location, status,
+    officer_id: me?.id || null,
+    officer_name: officer?.name || 'Unknown',
+    officer_badge: officer?.badge || ''
+  }).select('id');
+  btn.disabled = false; btn.textContent = 'Log Call';
+
+  if (error) {
+    const isMissing = error.message?.includes('dispatch_calls');
+    showMsg('dispatch-msg', isMissing ? 'Dispatch table not set up yet. See setup instructions in Supabase.' : 'Error: '+error.message, 'err');
+    return;
+  }
+  if (!data?.length) { showMsg('dispatch-msg', 'Call was silently blocked — check RLS policy on dispatch_calls.', 'err'); return; }
+
+  $('dispatch-modal').style.display = 'none';
+  loadDispatch();
+});
+
+const DISPATCH_STATUS_LABELS = { active: 'ACTIVE', en_route: 'EN ROUTE', on_scene: 'ON SCENE', resolved: 'RESOLVED' };
+const DISPATCH_STATUS_CLASS  = { active: 'bg-gold', en_route: 'bg-blue', on_scene: 'bg-green', resolved: 'bg-blue' };
+
+async function loadDispatch() {
+  const tbody = $('dispatch-table');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">Loading...</td></tr>';
+
+  let q = db().from('dispatch_calls').select('*').order('created_at', {ascending: false});
+  if (dispatchFilter === 'active') q = q.neq('status', 'resolved');
+
+  const { data, error } = await q;
+
+  if (error) {
+    const isMissing = error.message?.includes('dispatch_calls');
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">${isMissing ? 'Dispatch table not set up yet — see Supabase setup instructions.' : 'Error: '+error.message}</td></tr>`;
+    $('dispatch-count').textContent = '0 Active';
+    return;
+  }
+  if (!data?.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">No calls logged yet.</td></tr>';
+    $('dispatch-count').textContent = '0 Active';
+    return;
+  }
+
+  const activeCount = data.filter(d => d.status !== 'resolved').length;
+  $('dispatch-count').textContent = activeCount + ' Active';
+
+  const frag = document.createDocumentFragment();
+  data.forEach(d => {
+    const tr = document.createElement('tr');
+    const time = new Date(d.created_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+    const statusLbl = DISPATCH_STATUS_LABELS[d.status] || d.status;
+    const statusCls = DISPATCH_STATUS_CLASS[d.status] || 'bg-blue';
+
+    const tdCode = document.createElement('td');
+    tdCode.innerHTML = '<strong style="color:var(--gold)">' + (d.code||'—') + '</strong>';
+    const tdDetails = document.createElement('td'); tdDetails.textContent = d.details || '—';
+    const tdLoc = document.createElement('td'); tdLoc.textContent = d.location || '—';
+    const tdOfficer = document.createElement('td'); tdOfficer.textContent = (d.officer_name||'Unknown') + (d.officer_badge?' ['+d.officer_badge+']':'');
+    const tdStatus = document.createElement('td');
+    tdStatus.innerHTML = '<span class="badge ' + statusCls + '">' + statusLbl + '</span>';
+    const tdTime = document.createElement('td'); tdTime.textContent = time;
+    const tdActions = document.createElement('td');
+
+    if (d.status !== 'resolved') {
+      const nextSel = document.createElement('select');
+      nextSel.className = 'fi'; nextSel.style.cssText = 'padding:4px 8px;font-size:12px;width:auto';
+      ['active','en_route','on_scene','resolved'].forEach(s => {
+        const o = document.createElement('option'); o.value = s; o.textContent = DISPATCH_STATUS_LABELS[s];
+        if (s === d.status) o.selected = true;
+        nextSel.appendChild(o);
+      });
+      nextSel.addEventListener('change', () => updateDispatchStatus(d.id, nextSel.value));
+      tdActions.appendChild(nextSel);
+    }
+
+    tr.appendChild(tdCode); tr.appendChild(tdDetails); tr.appendChild(tdLoc);
+    tr.appendChild(tdOfficer); tr.appendChild(tdStatus); tr.appendChild(tdTime); tr.appendChild(tdActions);
+    frag.appendChild(tr);
+  });
+  tbody.innerHTML = '';
+  tbody.appendChild(frag);
+}
+
+async function updateDispatchStatus(id, status) {
+  const { error } = await db().from('dispatch_calls').update({status}).eq('id', id);
+  if (error) alert('Error updating status: '+error.message);
+  else loadDispatch();
+}
+
+// ═══════════════════════════════════════════════════
+// MY STATS
+// ═══════════════════════════════════════════════════
+async function loadStats() {
+  const { data: logs }    = await db().from('seizure_logs').select('*').eq('officer_id', me.id).order('created_at',{ascending:false});
+  const { data: allLogs } = await db().from('seizure_logs').select('officer_id,value');
+  if (!logs) return;
+  const totalVal  = logs.reduce((s,l)=>s+(Number(l.value)||0),0);
+  const totalArr  = logs.reduce((s,l)=>s+(Number(l.arrests)||0),0);
+  const totalFA   = logs.filter(l=>l.log_type==='firearm'||l.log_type==='both').reduce((s,l)=>s+(Number(l.firearm_qty)||0),0);
+  const drugLogs  = logs.filter(l=>l.log_type==='drug'||l.log_type==='both'||(l.log_type==null&&l.drug));
+  const drugCount = {}; drugLogs.forEach(l=>{if(l.drug)drugCount[l.drug]=(drugCount[l.drug]||0)+1;});
+  const topDrug   = Object.entries(drugCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';
+  const areaCount = {}; logs.forEach(l=>{const a=(l.location||'').split(',')[0].trim();areaCount[a]=(areaCount[a]||0)+1;});
+  const topArea   = Object.entries(areaCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';
+  if (allLogs) {
+    const byOfficer = {}; allLogs.forEach(l=>{byOfficer[l.officer_id]=(byOfficer[l.officer_id]||0)+1;});
+    const sorted = Object.entries(byOfficer).sort((a,b)=>b[1]-a[1]);
+    const pos    = sorted.findIndex(([id])=>id===me.id)+1;
+    $('st-rank').textContent = pos ? `#${pos} of ${sorted.length}` : '—';
+  }
+  $('st-seizures').textContent = logs.length;
+  $('st-value').textContent    = fmtVal(totalVal);
+  $('st-arrests').textContent  = totalArr;
+  $('st-firearms').textContent = totalFA;
+  $('st-drugs').textContent    = drugLogs.length;
+  $('st-topdrug').textContent  = topDrug;
+  $('st-area').textContent     = topArea;
+
+  const c = $('my-logs');
+  if (!logs.length) { c.innerHTML='<div class="empty"><p>No logs yet.</p></div>'; return; }
+  const frag = document.createDocumentFragment();
+  logs.slice(0,10).forEach(l => {
+    const d = document.createElement('div');
+    d.className = 'log-entry';
+    d.innerHTML = `<div class="le-top"><div><h4>${l.drug||l.firearm||'—'} · ${l.location}</h4></div><div style="text-align:right"><div style="color:var(--gold);font-weight:700">${fmtVal(l.value)}</div><div style="font-size:11px;color:var(--ts)">${fmtDate(l.created_at)}</div></div></div><div class="le-meta"><span>${l.op_type||''}</span><span>${l.arrests} arrested</span></div>`;
+    frag.appendChild(d);
+  });
+  c.innerHTML = '';
+  c.appendChild(frag);
+}
+
+// ═══════════════════════════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════════════════════════
+let charts = {};
+function destroyChart(key) { if (charts[key]) { charts[key].destroy(); delete charts[key]; } }
+
+const CHART_COLORS = {
+  gold: '#c9a84c', goldFaint: 'rgba(201,168,76,.25)',
+  red: '#d64545', redFaint: 'rgba(214,69,69,.25)',
+  blue: '#4a9eff', blueFaint: 'rgba(74,158,255,.25)',
+  green: '#3db87a', greenFaint: 'rgba(61,184,122,.25)',
+  grid: 'rgba(255,255,255,.06)', text: '#8b92a8'
+};
+
+function baseChartOpts(extra) {
+  return Object.assign({
+    responsive: true,
+    plugins: { legend: { labels: { color: CHART_COLORS.text, font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: CHART_COLORS.text, font: { size: 10 } }, grid: { color: CHART_COLORS.grid } },
+      y: { ticks: { color: CHART_COLORS.text, font: { size: 10 } }, grid: { color: CHART_COLORS.grid }, beginAtZero: true }
+    }
+  }, extra || {});
+}
+
+async function loadAnalytics() {
+  const { data: logs } = await db().from('seizure_logs').select('*').order('created_at',{ascending:true});
+  if (!logs) return;
+
+  // ── Monthly Seizures (last 6 months) ──
+  const months = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key: d.getFullYear()+'-'+d.getMonth(), label: d.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}) });
+  }
+  const monthlyCounts = months.map(mo => logs.filter(l => {
+    const d = new Date(l.created_at);
+    return (d.getFullYear()+'-'+d.getMonth()) === mo.key;
+  }).length);
+
+  destroyChart('monthly');
+  charts.monthly = new Chart($('chart-monthly'), {
+    type: 'bar',
+    data: { labels: months.map(m=>m.label), datasets: [{ label: 'Seizures', data: monthlyCounts, backgroundColor: CHART_COLORS.goldFaint, borderColor: CHART_COLORS.gold, borderWidth: 1.5, borderRadius: 4 }] },
+    options: baseChartOpts({ plugins: { legend: { display: false } } })
+  });
+
+  // ── Drug Trends (breakdown by drug name) ──
+  const drugCounts = {};
+  logs.forEach(l => {
+    if (!l.drug) return;
+    l.drug.split(',').map(s=>s.trim()).filter(Boolean).forEach(d => { drugCounts[d] = (drugCounts[d]||0) + 1; });
+  });
+  const drugLabels = Object.keys(drugCounts);
+  const drugData   = Object.values(drugCounts);
+  const drugPalette = [CHART_COLORS.gold, CHART_COLORS.blue, CHART_COLORS.red, CHART_COLORS.green, '#a98ce0', '#e08c4a'];
+
+  destroyChart('drugs');
+  charts.drugs = new Chart($('chart-drugs'), {
+    type: 'doughnut',
+    data: { labels: drugLabels.length?drugLabels:['No data'], datasets: [{ data: drugData.length?drugData:[1], backgroundColor: drugLabels.length?drugPalette:[CHART_COLORS.grid], borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: CHART_COLORS.text, font: { size: 11 } } } } }
+  });
+
+  // ── Officer Leaderboard (top 6 by seizure count) ──
+  const officerCounts = {};
+  logs.forEach(l => { const name = l.officer_name || 'Unknown'; officerCounts[name] = (officerCounts[name]||0) + 1; });
+  const topOfficers = Object.entries(officerCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  destroyChart('leaderboard');
+  charts.leaderboard = new Chart($('chart-leaderboard'), {
+    type: 'bar',
+    data: { labels: topOfficers.map(o=>o[0]), datasets: [{ label: 'Seizures', data: topOfficers.map(o=>o[1]), backgroundColor: CHART_COLORS.blueFaint, borderColor: CHART_COLORS.blue, borderWidth: 1.5, borderRadius: 4 }] },
+    options: baseChartOpts({ indexAxis: 'y', plugins: { legend: { display: false } } })
+  });
+
+  // ── Arrest Trends (last 6 months) ──
+  const monthlyArrests = months.map(mo => logs.filter(l => {
+    const d = new Date(l.created_at);
+    return (d.getFullYear()+'-'+d.getMonth()) === mo.key;
+  }).reduce((s,l)=>s+(Number(l.arrests)||0),0));
+
+  destroyChart('arrests');
+  charts.arrests = new Chart($('chart-arrests'), {
+    type: 'line',
+    data: { labels: months.map(m=>m.label), datasets: [{ label: 'Arrests', data: monthlyArrests, borderColor: CHART_COLORS.red, backgroundColor: CHART_COLORS.redFaint, fill: true, tension: 0.35, pointBackgroundColor: CHART_COLORS.red }] },
+    options: baseChartOpts({ plugins: { legend: { display: false } } })
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// IC INTRANET
+// ═══════════════════════════════════════════════════
+document.querySelectorAll('.mail-folder-btn').forEach(btn => {
+  btn.addEventListener('click', () => loadMail(btn.dataset.folder, btn));
+});
+
+$('compose-btn').addEventListener('click', () => {
+  $('compose-pane').style.display = 'block';
+  $('mail-reply').style.display   = 'none';
+  $('mail-view').innerHTML = '<div style="padding:4rem;text-align:center;color:var(--ts)"><div style="font-size:36px;margin-bottom:12px">✉️</div><p>New message</p></div>';
+  ['compose-to','compose-subject','compose-body'].forEach(id => $(id).value = '');
+});
+
+$('cancel-compose-btn').addEventListener('click', () => {
+  $('compose-pane').style.display = 'none';
+});
+
+$('send-reply-btn').addEventListener('click', sendReply);
+$('send-compose-btn').addEventListener('click', sendCompose);
+
+async function loadMail(folder, btn) {
+  mailFolder = folder || 'inbox';
+  document.querySelectorAll('.mail-folder-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    const b = document.querySelector(`.mail-folder-btn[data-folder="${mailFolder}"]`);
+    if (b) b.classList.add('active');
+  }
+  $('mail-view').innerHTML = '<div style="padding:4rem;text-align:center;color:var(--ts)"><div style="font-size:36px;margin-bottom:12px">✉️</div><p>Select a message</p></div>';
+  $('mail-reply').style.display   = 'none';
+  $('compose-pane').style.display = 'none';
+  mailMsgId = null;
+
+  let q = db().from('messages').select('*').order('created_at',{ascending:false});
+  if (mailFolder === 'inbox')       q = q.eq('to_id', me.id);
+  else if (mailFolder === 'sent')   q = q.eq('from_id', me.id);
+  else if (mailFolder === 'application') q = q.or(`to_id.eq.${me.id},from_id.eq.${me.id}`);
+
+  const { data, error } = await q;
+  const list = $('mail-list');
+
+  if (error) {
+    const isTableMissing = error.message?.includes('messages');
+    list.innerHTML = `<div style="padding:1rem;color:var(--ts);font-size:13px">${isTableMissing ? 'Messages table not set up yet. See setup instructions.' : 'Error: '+error.message}</div>`;
+    return;
+  }
+  if (!data?.length) {
+    list.innerHTML = '<div style="padding:1rem;color:var(--ts);font-size:13px">No messages.</div>';
+    return;
+  }
+
+  const unread = data.filter(m => !m.read && m.to_id === me.id).length;
+  const badge = $('inbox-count');
+  if (badge) badge.textContent = unread > 0 ? unread : '';
+
+  const frag = document.createDocumentFragment();
+  data.forEach(m => {
+    const isUnread = !m.read && m.to_id === me.id;
+    const from = m.from_id === me.id ? `To: ${m.to_name||'Officer'}` : (m.from_name||'Unknown');
+    const item = document.createElement('div');
+    item.className = 'mail-item' + (isUnread?' unread':'');
+    item.dataset.msgId = m.id;
+    item.innerHTML = `<div class="mi-from"><span>${from}</span><span>${fmtDate(m.created_at)}</span></div><div class="mi-subject">${m.subject||'(no subject)'}</div><div class="mi-preview">${(m.body||'').substring(0,60)}...</div>`;
+    item.addEventListener('click', () => openMsg(m.id, data));
+    frag.appendChild(item);
+  });
+  list.innerHTML = '';
+  list.appendChild(frag);
+}
+
+async function openMsg(id, msgs) {
+  mailMsgId = id;
+  const m = msgs.find(x => x.id === id);
+  if (!m) return;
+  if (m.to_id === me.id && !m.read) {
+    await db().from('messages').update({read:true}).eq('id',id);
+    m.read = true; // update local copy so badge recalculates correctly
+    // Recalculate unread badge immediately
+    const unread = msgs.filter(x => !x.read && x.to_id === me.id).length;
+    const badge = $('inbox-count');
+    if (badge) badge.textContent = unread > 0 ? unread : '';
+    checkNotifications(); // also refresh the sidebar badge
+    // Remove the 'unread' style from this item in the list
+    document.querySelectorAll('.mail-item').forEach(el => {
+      if (el.dataset.msgId === id) el.classList.remove('unread');
+    });
+  }
+  const view = $('mail-view');
+  const delBtnHtml = '<button id="msg-delete-btn" class="btn danger" style="margin-top:1.5rem">🗑️ Delete Message</button>';
+  view.innerHTML = `<h3 style="font-size:18px;font-weight:700;margin-bottom:.75rem">${m.subject||'(no subject)'}</h3><div style="font-size:13px;color:var(--ts);margin-bottom:1.5rem">From: <strong style="color:var(--tp)">${m.from_name||'Unknown'}</strong> &nbsp;·&nbsp; ${fmtDate(m.created_at)}</div><div style="font-size:14px;line-height:1.8;white-space:pre-wrap">${m.body||''}</div>${delBtnHtml}`;
+  $('msg-delete-btn').addEventListener('click', () => deleteMsg(id));
+  // Show reply box for any message the officer didn't send themselves
+  if (m.from_id !== me.id) {
+    $('mail-reply').style.display = 'block';
+    $('reply-body').value = '';
+  } else {
+    $('mail-reply').style.display = 'none';
+  }
+}
+
+async function deleteMsg(id) {
+  if (!confirm('Delete this message?')) return;
+  const { data, error } = await db().from('messages').delete().eq('id', id).select('id');
+  if (error) return alert('Error: '+error.message);
+  if (!data?.length) {
+    alert('Delete request was sent but no message was removed — this usually means a Supabase RLS policy is blocking deletes. See setup instructions to add a delete policy on the messages table.');
+    return;
+  }
+  $('mail-view').innerHTML = '<div style="text-align:center;padding:4rem;color:var(--ts)"><div style="font-size:36px;margin-bottom:12px">✉️</div><p>Select a message</p></div>';
+  $('mail-reply').style.display = 'none';
+  mailMsgId = null;
+  loadMail(mailFolder);
+  checkNotifications();
+}
+
+async function sendReply() {
+  const body = $('reply-body').value.trim();
+  if (!body || !mailMsgId) return;
+  const { data: orig } = await db().from('messages').select('*').eq('id',mailMsgId).single();
+  if (!orig) return;
+  const { data, error } = await db().from('messages').insert({
+    from_id: me.id, from_name: officer.name,
+    to_id: orig.from_id, to_name: orig.from_name,
+    subject: 'Re: '+(orig.subject||''), body, read: false
+  }).select('id');
+  if (error) return alert('Error: '+error.message);
+  if (!data?.length) return alert('Reply was blocked — likely an RLS policy issue on the messages table. See setup instructions.');
+  $('reply-body').value = '';
+  $('mail-reply').style.display = 'none';
+  alert('Reply sent!');
+  loadMail(mailFolder);
+}
+
+async function sendCompose() {
+  const toQ     = $('compose-to').value.trim();
+  const subject = $('compose-subject').value.trim();
+  const body    = $('compose-body').value.trim();
+  if (!toQ || !body) return alert('Please fill in recipient and message.');
+  const { data: officers } = await db().from('officers').select('id,name,badge');
+  const match = (officers||[]).find(o => o.name.toLowerCase()===toQ.toLowerCase() || o.badge.toLowerCase()===toQ.toLowerCase());
+  if (!match) return alert(`Officer "${toQ}" not found. Use their character name or badge number.`);
+  const { error } = await db().from('messages').insert({
+    from_id: me.id, from_name: officer.name,
+    to_id: match.id, to_name: match.name,
+    subject, body, read: false
+  });
+  if (error) return alert('Error: '+error.message);
+  $('compose-pane').style.display = 'none';
+  alert('Message sent to '+match.name+'!');
+  loadMail('sent');
+}
+
+// ═══════════════════════════════════════════════════
+// APPLICATIONS
+// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+// APPLICANT INTRANET (no login required)
+// ═══════════════════════════════════════════════════
+let intrApp = null;
+let intrMsgs = [];
+let intrCurrentMsg = null;
+
+async function openApplicantIntranet() {
+  const app = window._lastApp;
+  if (!app) return alert('Application data not found. Please check your status again.');
+  intrApp = app;
+  showPage('intranet');
+
+  // Set user info in sidebar
+  const ui = $('intranet-user-info');
+  ui.innerHTML = '<strong style="color:var(--tp);display:block">' + (app.char_name||'') + '</strong><span style="color:var(--ts)">' + (app.phone||'') + '</span>';
+
+  // Status badge
+  const sb2 = $('intranet-status-badge');
+  const statusColour = app.status==='approved'?'#6adba0':app.status==='rejected'?'#f08080':'var(--gold)';
+  const statusLabel  = app.status==='approved'?'✅ Approved':app.status==='rejected'?'❌ Rejected':app.status==='reviewed'?'🚔 Ride Along Stage':'⏳ Pending';
+  sb2.innerHTML = '<span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;border:1px solid currentColor;color:'+statusColour+'">'+statusLabel+'</span>';
+
+  await loadIntranetMsgs();
+}
+
+function threadKeyFor(m, myName) {
+  // Group strictly by who the conversation is with — guarantees one thread per officer/department, regardless of subject changes
+  return m.from_name === myName ? m.to_name : m.from_name;
+}
+
+async function loadIntranetMsgs() {
+  if (!intrApp) return;
+  const list = $('intranet-msg-list');
+  list.innerHTML = '<div style="padding:1rem;color:var(--ts);font-size:13px">Loading...</div>';
+
+  // Fetch both messages received AND sent by this applicant
+  const { data: msgs, error } = await db().from('messages')
+    .select('*')
+    .or('to_name.eq.' + intrApp.char_name + ',from_name.eq.' + intrApp.char_name)
+    .order('created_at', {ascending: true});
+
+  intrMsgs = msgs || [];
+
+  if (error || !intrMsgs.length) {
+    list.innerHTML = '<div style="padding:1rem;color:var(--ts);font-size:13px">' + (error&&error.message?.includes('messages') ? 'Intranet not yet configured. Contact an admin.' : 'No messages yet. Check back after your ride along is arranged.') + '</div>';
+    return;
+  }
+
+  // Group into one thread per conversation partner
+  const threads = {};
+  intrMsgs.forEach(m => {
+    const key = threadKeyFor(m, intrApp.char_name) || 'Unknown';
+    if (!threads[key]) threads[key] = [];
+    threads[key].push(m);
+  });
+  const threadKeys = Object.keys(threads).sort((a,b) => {
+    const aLast = threads[a][threads[a].length-1].created_at;
+    const bLast = threads[b][threads[b].length-1].created_at;
+    return new Date(bLast) - new Date(aLast);
+  });
+
+  intrThreads = threads;
+
+  const frag = document.createDocumentFragment();
+  threadKeys.forEach(key => {
+    const thread = threads[key];
+    const latest = thread[thread.length-1];
+    const first = thread[0];
+    const item = document.createElement('div');
+    item.className = 'mail-item';
+    item.innerHTML = '<div class="mi-from"><span>' + key + '</span><span>' + fmtDate(latest.created_at) + '</span></div><div class="mi-subject" style="color:var(--tp);font-weight:600">' + (first.subject||'(no subject)') + (thread.length>1?' <span style="color:var(--ts);font-weight:400">('+thread.length+')</span>':'') + '</div><div class="mi-preview">' + (latest.body||'').substring(0,60) + '...</div>';
+    item.addEventListener('click', () => openIntranetThread(key));
+    frag.appendChild(item);
+  });
+  list.innerHTML = '';
+  list.appendChild(frag);
+
+  // Auto-open most recent thread
+  if (threadKeys.length) openIntranetThread(threadKeys[0]);
+}
+
+let intrThreads = {};
+let intrCurrentThreadKey = null;
+
+function openIntranetThread(key) {
+  intrCurrentThreadKey = key;
+  const thread = intrThreads[key] || [];
+  const view = $('intranet-msg-view');
+  view.innerHTML = '';
+
+  thread.forEach((m, i) => {
+    const isSentByApplicant = m.from_name === intrApp?.char_name;
+    const msgBlock = document.createElement('div');
+    msgBlock.style.cssText = 'margin-bottom:1rem';
+
+    const hd = document.createElement('div');
+    hd.style.cssText = 'margin-bottom:.5rem;display:flex;align-items:center;justify-content:space-between';
+    hd.innerHTML = '<div style="font-size:13px;color:var(--ts)">' + (isSentByApplicant ? '<strong style="color:var(--gold)">You</strong>' : '<strong style="color:var(--tp)">' + (m.from_name||'VICE HR') + '</strong>') + '</div><div style="font-size:12px;color:var(--ts)">' + fmtDate(m.created_at) + '</div>';
+
+    const body = document.createElement('div');
+    body.style.cssText = 'font-size:14px;line-height:1.8;white-space:pre-wrap;color:var(--tp);background:' + (isSentByApplicant ? 'rgba(201,168,76,.08)' : 'rgba(255,255,255,.03)') + ';border-left:3px solid ' + (isSentByApplicant ? 'var(--gold)' : 'var(--border-d)') + ';border-radius:0 8px 8px 0;padding:.85rem 1.1rem';
+    body.textContent = m.body || '';
+
+    msgBlock.appendChild(hd);
+    msgBlock.appendChild(body);
+    view.appendChild(msgBlock);
+  });
+
+  // Show subject of the first message as a single thread title at top
+  const titleEl = document.createElement('h3');
+  titleEl.style.cssText = 'font-size:18px;font-weight:700;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border-d)';
+  titleEl.textContent = thread[0]?.subject || '(no subject)';
+  view.insertBefore(titleEl, view.firstChild);
+
+  view.scrollTop = view.scrollHeight;
+
+  $('intranet-reply').style.display = 'block';
+  $('intranet-reply-body').value = '';
+  clearMsg('intranet-reply-msg');
+}
+
+$('intranet-send-reply').addEventListener('click', async () => {
+  const body = $('intranet-reply-body').value.trim();
+  if (!body || !intrCurrentThreadKey) return;
+  const thread = intrThreads[intrCurrentThreadKey] || [];
+  const latest = thread[thread.length-1];
+  if (!latest) return;
+  $('intranet-send-reply').disabled = true;
+  const replyToId = latest.from_name === intrApp.char_name ? latest.to_id : latest.from_id;
+  const { data, error } = await db().from('messages').insert({
+    from_id: null,
+    from_name: intrApp?.char_name || 'Applicant',
+    to_id: replyToId,
+    to_name: intrCurrentThreadKey,
+    subject: 'Re: ' + (thread[0].subject||''),
+    body, read: false
+  }).select('id');
+  $('intranet-send-reply').disabled = false;
+  if (error) {
+    const isRLS = error.message?.includes('row-level security');
+    showMsg('intranet-reply-msg', isRLS ? 'Unable to send — the messages table needs an additional policy to allow applicant replies. Ask an admin to run the applicant-reply SQL policy in Supabase.' : 'Error: '+error.message, 'err');
+    return;
+  }
+  if (!data?.length) {
+    showMsg('intranet-reply-msg', 'Reply was silently blocked — this means the messages table is missing a policy that allows inserts where from_id is null. Ask an admin to run: create policy "applicants can reply" on messages for insert with check (from_id is null);', 'err');
+    return;
+  }
+  $('intranet-reply-body').value = '';
+  await loadIntranetMsgs();
+});
+
+$('intr-inbox-btn').addEventListener('click', () => loadIntranetMsgs());
+
+$('status-check-btn').addEventListener('click', async () => {
+  const discord = $('status-discord').value.trim();
+  if (!discord) return showMsg('status-msg', 'Enter your Discord handle.', 'err');
+  $('status-check-btn').disabled = true;
+  $('status-check-btn').textContent = 'Checking…';
+
+  // Search by discord (stored in 'name' column) or character name
+  const handle = discord.replace(/^@/, '').toLowerCase();
+  // Try discord handle (stored in 'name') first, then char name
+  let { data: apps, error } = await db().from('applications')
+    .select('*').ilike('name', '%' + handle + '%')
+    .order('created_at', {ascending: false}).limit(1);
+  if (!error && !apps?.length) {
+    const res2 = await db().from('applications')
+      .select('*').ilike('char_name', '%' + handle + '%')
+      .order('created_at', {ascending: false}).limit(1);
+    apps = res2.data; error = res2.error;
+  }
+
+  $('status-check-btn').disabled = false;
+  $('status-check-btn').textContent = 'Check Status';
+
+  if (error) { showMsg('status-msg', 'Error: '+error.message, 'err'); return; }
+  if (!apps?.length) {
+    showMsg('status-msg', 'No application found. Double-check the Discord handle you used when applying. If you\'re sure it\'s correct, the unit\'s database may need to be configured to allow public lookups (ask an admin to check the applications table RLS policy in Supabase).', 'err');
+    return;
+  }
+
+  const app = apps[0];
+  const statusColour = app.status === 'approved' ? '#6adba0' : app.status === 'rejected' ? '#f08080' : 'var(--gold)';
+  const statusLabel  = app.status === 'approved' ? '✅ Approved' : app.status === 'rejected' ? '❌ Rejected' : app.status === 'reviewed' ? '🚔 Ride Along Stage' : '⏳ Pending Review';
+
+  const result = $('status-result');
+  result.innerHTML = '';
+
+  const card = document.createElement('div');
+  card.style.cssText = 'background:rgba(10,12,15,.5);border:1px solid var(--border-d);border-radius:8px;padding:1.25rem';
+
+  const top = document.createElement('div');
+  top.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border-d)';
+  const nameDiv = document.createElement('div');
+  nameDiv.innerHTML = '<div style="font-size:15px;font-weight:700">' + app.char_name + '</div><div style="font-size:12px;color:var(--ts)">' + app.phone + ' · Applied ' + fmtDate(app.created_at) + '</div>';
+  const badge = document.createElement('span');
+  badge.style.cssText = 'font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;border:1px solid currentColor;color:' + statusColour;
+  badge.textContent = statusLabel;
+  top.appendChild(nameDiv); top.appendChild(badge);
+  card.appendChild(top);
+
+  if (true) { // show info for all statuses
+    const infoDiv = document.createElement('div');
+    infoDiv.style.cssText = 'font-size:13px;color:var(--ts);line-height:1.7;margin-bottom:1rem';
+    if (app.status === 'reviewed') {
+      infoDiv.innerHTML = '🎉 Your application has progressed to the <strong style="color:var(--gold)">Ride Along stage</strong>. A senior officer will be in contact with you. Check your messages in the IC Intranet. <br><br><button onclick="openApplicantIntranet()" style="background:var(--gold);color:#0a0c0f;border:none;border-radius:6px;padding:8px 18px;font-weight:700;cursor:pointer;font-size:13px;margin-top:4px">✉️ Open IC Intranet</button>';
+    } else if (app.status === 'approved') {
+      infoDiv.innerHTML = '✅ Your application has been <strong style="color:#6adba0">approved</strong>! <a href="#" onclick="showPage(\'login\');return false;" style="color:var(--gold);font-weight:600;text-decoration:underline">→ Register your account here</a> using the Officer Login, then log in to access the Vice Unit portal.';
+    } else if (app.status === 'rejected') {
+      infoDiv.innerHTML = 'Unfortunately your application was not successful at this time. You are welcome to re-apply in the future.';
+      infoDiv.style.color = '#f08080';
+    } else {
+      infoDiv.innerHTML = '⏳ Your application is <strong style="color:var(--gold)">pending review</strong>. We will be in touch through the IC Intranet once it has been assessed. Thank you for your patience.';
+    }
+    card.appendChild(infoDiv);
+  }
+
+  window._lastApp = app;
+  result.appendChild(card);
+
+  // Load messages for this applicant
+  const { data: msgs } = await db().from('messages')
+    .select('*').eq('to_name', app.char_name).order('created_at', {ascending: false});
+
+  if (msgs?.length) {
+    const msgHd = document.createElement('div');
+    msgHd.style.cssText = 'font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin:1.25rem 0 .75rem';
+    msgHd.textContent = 'Messages from the Unit';
+    result.appendChild(msgHd);
+    msgs.forEach(m => {
+      const md = document.createElement('div');
+      md.style.cssText = 'background:var(--navy-m);border:1px solid var(--border-d);border-radius:8px;padding:1rem;margin-bottom:.75rem';
+      md.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:.5rem"><strong style="font-size:13px">' + (m.subject||'(no subject)') + '</strong><span style="font-size:11px;color:var(--ts)">' + fmtDate(m.created_at) + '</span></div><div style="font-size:13px;color:var(--ts);line-height:1.6;white-space:pre-wrap">' + (m.body||'') + '</div>';
+      result.appendChild(md);
+    });
+  }
+});
+
+$('app-submit').addEventListener('click', async () => {
+  const charName = $('app-char').value.trim();
+  const rank     = $('app-rank').value;
+  const email    = $('app-email').value.trim();
+  const discord  = $('app-discord').value.trim();
+  const why      = $('app-why').value.trim();
+  if (!charName||!rank||!email||!discord||!why) return showMsg('apply-msg','Please fill in all required fields.','err');
+  $('app-submit').disabled = true; $('app-submit').textContent = 'Submitting…';
+  const { error } = await db().from('applications').insert({
+    char_name: charName, name: discord, phone: rank,
+    experience: '', why_join: why,
+    backstory: `Email: ${email} | Discord: ${discord}`
+  });
+  $('app-submit').disabled = false; $('app-submit').textContent = 'Submit Application';
+  if (error) return showMsg('apply-msg', error.message.includes('row-level security') ? 'Please ask an admin to enable public applications in Supabase (allow anon INSERT on applications table).' : 'Error: '+error.message, 'err');
+  showMsg('apply-msg','✅ Application submitted! We will be in touch.','ok');
+  ['app-char','app-email','app-discord','app-why'].forEach(id => $(id).value='');
+  $('app-rank').selectedIndex = 0;
+});
+
+async function loadApps() {
+  const list = $('apps-list');
+  list.textContent = 'Loading…';
+  let q = db().from('applications').select('*').order('created_at',{ascending:false});
+  if (appsFilter !== 'all') q = q.eq('status', appsFilter);
+  const { data, error } = await q;
+  if (error||!data?.length) { list.textContent = error?'Error: '+error.message:'No applications yet.'; return; }
+  const frag = document.createDocumentFragment();
+  data.forEach(a => {
+    const card = document.createElement('div');
+    card.className = 'app-card';
+    const contact = a.backstory?.startsWith('Email:') ? a.backstory : `Contact: ${a.name||'—'}`;
+
+    const head = document.createElement('div'); head.className = 'app-head';
+    const headLeft = document.createElement('div');
+    const h4 = document.createElement('h4');
+    h4.textContent = a.char_name + ' ';
+    const rankSpan = document.createElement('span');
+    rankSpan.style.cssText = 'font-weight:400;color:var(--ts)';
+    rankSpan.textContent = '— ' + (a.phone||'Unknown Rank');
+    h4.appendChild(rankSpan);
+    const meta = document.createElement('div'); meta.className = 'app-meta';
+    meta.textContent = `📧 ${contact} · ${fmtDate(a.created_at)}`;
+    headLeft.appendChild(h4); headLeft.appendChild(meta);
+    const statusSpan = document.createElement('span');
+    statusSpan.className = 's-' + (a.status||'pending');
+    statusSpan.style.cssText = 'font-size:12px;font-weight:600;text-transform:capitalize;border:1px solid currentColor;padding:3px 10px;border-radius:20px';
+    statusSpan.textContent = a.status||'pending';
+    head.appendChild(headLeft); head.appendChild(statusSpan);
+
+    const why = document.createElement('div'); why.style.cssText = 'font-size:13px;margin-bottom:.5rem';
+    const whyLbl = document.createElement('strong');
+    whyLbl.style.cssText = 'font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--ts)';
+    whyLbl.textContent = 'Why Join';
+    why.appendChild(whyLbl); why.appendChild(document.createElement('br'));
+    why.appendChild(document.createTextNode(a.why_join));
+
+    card.appendChild(head); card.appendChild(why);
+    const actions = document.createElement('div');
+    actions.className = 'app-actions';
+    if (!a.status||a.status==='pending') {
+      const rev  = document.createElement('button'); rev.className='btn'; rev.style.cssText='border-color:#7ab8ff;color:#7ab8ff'; rev.textContent='🚔 Ride Along';
+      rev.addEventListener('click', () => updateApp(a.id,'reviewed'));
+      const appr = document.createElement('button'); appr.className='btn success'; appr.textContent='✅ Approve';
+      appr.addEventListener('click', () => updateApp(a.id,'approved'));
+      const rej  = document.createElement('button'); rej.className='btn danger'; rej.textContent='❌ Reject';
+      rej.addEventListener('click', () => updateApp(a.id,'rejected'));
+      actions.appendChild(rev); actions.appendChild(appr); actions.appendChild(rej);
+    } else if (a.status==='reviewed') {
+      const appr = document.createElement('button'); appr.className='btn success'; appr.textContent='✅ Approve';
+      appr.addEventListener('click', () => updateApp(a.id,'approved'));
+      const rej  = document.createElement('button'); rej.className='btn danger'; rej.textContent='❌ Reject';
+      rej.addEventListener('click', () => updateApp(a.id,'rejected'));
+      actions.appendChild(appr); actions.appendChild(rej);
+    }
+    const del = document.createElement('button'); del.className='btn'; del.textContent='🗑️ Delete'; del.style.marginLeft='auto';
+    del.addEventListener('click', () => deleteApp(a.id));
+    actions.appendChild(del);
+    card.appendChild(actions);
+    frag.appendChild(card);
+  });
+  list.innerHTML = '';
+  list.appendChild(frag);
+}
+
+document.querySelectorAll('.af-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.af-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    appsFilter = btn.dataset.filter;
+    loadApps();
+  });
+});
+
+const RIDE_ALONG_EMAIL = `Hello,
+
+Thank you for your interest in joining the Los Santos Police Department Vice Unit.
+
+After reviewing your application, we are pleased to inform you that you have successfully progressed to the Ride Along Stage of the recruitment process.
+
+This stage allows us to evaluate your professionalism, initiative, communication skills, and overall suitability for the unit during active patrol operations.
+
+A senior Vice Unit officer will contact you through the Vice Unit Intranet or Discord to arrange a suitable date and time for your ride along. Please ensure you remain available and continue monitoring your messages.
+
+Ride Along Expectations
+• Maintain professional conduct at all times.
+• Follow all instructions provided by the supervising officer.
+• Demonstrate good communication and decision-making.
+• Remain engaged and show initiative throughout the patrol.
+
+Progression beyond this stage is not guaranteed and will be based on your overall performance and conduct during the evaluation.
+
+If you have any questions, please reply through the Vice Unit Intranet.
+
+We appreciate your interest in the Vice Unit and look forward to evaluating you further.
+
+Regards,
+Vice Unit Command Staff
+Los Santos Police Department
+Drug Enforcement Division`;
+
+async function updateApp(id, status) {
+  const { data: app, error } = await db().from('applications').update({status}).eq('id',id).select('*').single();
+  if (error) return alert('Error: '+error.message);
+
+  // Auto-send Ride Along notification email when moved to reviewed stage
+  if (status === 'reviewed' && app?.char_name) {
+    const { data: mailData, error: mailErr } = await db().from('messages').insert({
+      from_id: me?.id || null,
+      from_name: 'Vice Recruitment',
+      to_id: null,
+      to_name: app.char_name,
+      subject: 'Ride Along Stage — Application Update',
+      body: RIDE_ALONG_EMAIL,
+      read: false
+    }).select('id');
+    if (mailErr) {
+      alert('Application moved to Ride Along, but the automatic email failed to send: ' + mailErr.message + '\n\nThis is usually a Supabase RLS policy issue — see setup instructions.');
+    } else if (!mailData?.length) {
+      alert('Application moved to Ride Along, but the automatic email was silently blocked (likely an RLS policy on the messages table prevents this insert). Check Supabase setup instructions to allow officer-sent messages.');
+    }
+  }
+
+  loadApps();
+  checkNotifications();
+}
+async function deleteApp(id) {
+  if (!confirm('Delete this application?')) return;
+  const { error } = await db().from('applications').delete().eq('id',id);
+  if (error) alert('Error: '+error.message);
+  else { loadApps(); checkNotifications(); }
+}
+
+// ═══════════════════════════════════════════════════
+// OFFICERS
+// ═══════════════════════════════════════════════════
+const RANKS = ['Officer','Corporal','Sergeant','Lieutenant','Captain','Assistant Chief of Police','Chief of Police'];
+
+// Officer edit modal
+let editingOfficerId = null;
+function openOfficerEdit(o) {
+  editingOfficerId = o.id;
+  // Build inline edit row
+  const row = $('officer-edit-row-' + o.id);
+  if (!row) return;
+  const rankSel = row.querySelector('.edit-rank');
+  const badgeIn = row.querySelector('.edit-badge');
+  if (rankSel) rankSel.value = o.rank;
+  if (badgeIn) badgeIn.value = o.badge;
+  row.style.display = 'flex';
+}
+
+async function saveOfficerEdit(id) {
+  const row = $('officer-edit-row-' + id);
+  const rank  = row.querySelector('.edit-rank').value;
+  const badge = row.querySelector('.edit-badge').value.trim().toUpperCase();
+  if (!rank||!badge) return alert('Rank and badge are required.');
+  const { error } = await db().from('officers').update({rank, badge}).eq('id', id);
+  if (error) return alert('Error: '+error.message);
+  row.style.display = 'none';
+  loadUsers();
+}
+
+async function loadUsers() {
+  const { data: officers } = await db().from('officers').select('*').order('created_at');
+  const list = $('users-list');
+  if (!officers?.length) { list.innerHTML='<div class="empty"><p>No officers registered.</p></div>'; return; }
+  const frag = document.createDocumentFragment();
+  officers.forEach(o => {
+    const wrap = document.createElement('div');
+    const initials = o.name.split(' ').map(n=>n[0]).join('').slice(0,2);
+
+    // Main row
+    const row = document.createElement('div');
+    row.className = 'user-row';
+
+    const ua = document.createElement('div'); ua.className='ua'; ua.textContent=initials;
+    const ui = document.createElement('div'); ui.className='ui';
+    ui.innerHTML = '<strong>' + o.name + '</strong><span>' + o.rank + ' · ' + o.badge + ' · ' + (o.role==='admin'?'⭐ Admin': o.verified?'✅ Verified':'⏳ Pending Verification') + '</span>';
+    row.appendChild(ua); row.appendChild(ui);
+
+    if (officer?.role==='admin' && o.id!==officer.id) {
+      const acts = document.createElement('div'); acts.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
+
+      // Verify button
+      if (!o.verified) {
+        const vfy = document.createElement('button'); vfy.className='btn success'; vfy.textContent='✅ Verify';
+        vfy.addEventListener('click', () => verifyOfficer(o.id, o.name));
+        acts.appendChild(vfy);
+      }
+      // Edit rank/badge
+      const edt = document.createElement('button'); edt.className='btn'; edt.textContent='✏️ Edit';
+      edt.addEventListener('click', () => {
+        const er = $('officer-edit-row-' + o.id);
+        er.style.display = er.style.display === 'none' ? 'flex' : 'none';
+      });
+      acts.appendChild(edt);
+      // Make admin
+      if (o.role!=='admin') {
+        const prm = document.createElement('button'); prm.className='btn'; prm.textContent='⭐ Admin';
+        prm.addEventListener('click', () => promoteOfficer(o.id, o.name));
+        acts.appendChild(prm);
+      }
+      // Remove
+      const del = document.createElement('button'); del.className='btn danger'; del.textContent='Remove';
+      del.addEventListener('click', () => removeOfficer(o.id, o.name));
+      acts.appendChild(del);
+      row.appendChild(acts);
+    }
+    wrap.appendChild(row);
+
+    // Inline edit row (hidden)
+    const editRow = document.createElement('div');
+    editRow.id = 'officer-edit-row-' + o.id;
+    editRow.style.cssText = 'display:none;gap:8px;align-items:center;padding:10px 0 10px 48px;flex-wrap:wrap';
+
+    const rankSel = makeSelect(RANKS, 'edit-rank'); rankSel.value = o.rank;
+    const badgeIn = document.createElement('input');
+    badgeIn.className='fi edit-badge'; badgeIn.type='text'; badgeIn.value=o.badge; badgeIn.style.cssText='width:120px;padding:8px 10px';
+    badgeIn.placeholder='Badge #';
+    const saveBtn = document.createElement('button'); saveBtn.className='btn success'; saveBtn.textContent='Save';
+    saveBtn.addEventListener('click', () => saveOfficerEdit(o.id));
+    const cancelBtn = document.createElement('button'); cancelBtn.className='btn'; cancelBtn.textContent='Cancel';
+    cancelBtn.addEventListener('click', () => { editRow.style.display='none'; });
+
+    editRow.appendChild(document.createTextNode('Rank: ')); editRow.appendChild(rankSel);
+    editRow.appendChild(document.createTextNode(' Badge: ')); editRow.appendChild(badgeIn);
+    editRow.appendChild(saveBtn); editRow.appendChild(cancelBtn);
+    wrap.appendChild(editRow);
+
+    frag.appendChild(wrap);
+  });
+  list.innerHTML = '';
+  list.appendChild(frag);
+}
+async function removeOfficer(id,name) { if(!confirm(`Remove ${name}?`))return; await db().from('officers').delete().eq('id',id); loadUsers(); }
+async function verifyOfficer(id,name) { if(!confirm(`Verify ${name}?`))return; await db().from('officers').update({verified:true}).eq('id',id); loadUsers(); }
+async function promoteOfficer(id,name) { if(!confirm(`Make ${name} an Admin?`))return; await db().from('officers').update({role:'admin'}).eq('id',id); loadUsers(); }
+
+// ═══════════════════════════════════════════════════
+// INIT — runs 1s after page load, never on startup
+// ═══════════════════════════════════════════════════
+// Modal close — use mousedown on overlay background only
+$('log-modal').addEventListener('click', e => {
+  if (e.target === $('log-modal')) closeLogModal();
+});
+
+$('log-modal-close').addEventListener('click', closeLogModal);
+
+// Set hero background image — visible by default since the public page loads first
+const pfbgEl = $('pfbg');
+if (pfbgEl) {
+  pfbgEl.style.backgroundImage = 'url(https://i.postimg.cc/ZqXPkr7Z/Chat-GPT-Image-Jun-12-2026-10-05-53-PM.png)';
+  pfbgEl.style.display = 'block';
+}
+
+window.addEventListener('load', () => {
+  setTimeout(async () => {
+    const stored = sessionStorage.getItem('vs');
+    if (!stored) return;
+    try {
+      const session = JSON.parse(stored);
+      await db().auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
+      const { data: { user } } = await db().auth.getUser();
+      if (user) { me = user; await loadProfile(); }
+      else sessionStorage.removeItem('vs');
+    } catch(e) { sessionStorage.removeItem('vs'); }
+  }, 1000);
 });
 </script>
-
 </body>
 </html>
