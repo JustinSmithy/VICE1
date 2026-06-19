@@ -1594,6 +1594,38 @@ function addArresteeRow() {
   eg.appendChild(el); eg.appendChild(ei);
   fr.appendChild(ng); fr.appendChild(eg);
 
+  // Optional mugshot upload
+  const mg = document.createElement('div');
+  mg.style.cssText = 'margin-bottom:10px';
+  const ml = document.createElement('label'); ml.className='flbl';
+  ml.innerHTML = '📷 Mugshot <span style="color:var(--ts);font-weight:400">(optional)</span>';
+  const mi = document.createElement('input'); mi.type='file'; mi.accept='image/*'; mi.className='fi arr-mugshot';
+  mi.style.cssText = 'font-size:12px;padding:5px 8px';
+  // Show existing mugshot if suspect already on record
+  const mpreview = document.createElement('div');
+  mpreview.className = 'arr-mugshot-preview';
+  mpreview.style.cssText = 'display:none;margin-top:6px';
+  mg.appendChild(ml); mg.appendChild(mi); mg.appendChild(mpreview);
+
+  // Check for existing suspect when name is entered
+  ni.addEventListener('blur', async () => {
+    const name = ni.value.trim();
+    if (!name) return;
+    const { data: s } = await db().from('suspects').select('id,mugshot_url,notes').ilike('name', name).maybeSingle();
+    if (s?.mugshot_url) {
+      mpreview.style.display = 'flex';
+      mpreview.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 8px;background:rgba(201,168,76,.08);border:1px solid var(--border-d);border-radius:6px;font-size:12px';
+      mpreview.innerHTML = '<img src="'+s.mugshot_url+'" style="width:36px;height:45px;object-fit:cover;border-radius:3px;border:1px solid var(--border-d)" />'
+        + '<div><div style="color:var(--gold);font-weight:600">Suspect on record</div>'
+        + (s.notes ? '<div style="color:var(--ts)">'+s.notes+'</div>' : '')
+        + '<div style="color:var(--ts);margin-top:2px">Upload a new photo below to update their mugshot.</div></div>';
+      row.dataset.suspectId = s.id;
+    } else {
+      mpreview.style.display = 'none';
+      row.dataset.suspectId = '';
+    }
+  });
+
   // Charges
   const cg = document.createElement('div');
   cg.className = 'fgrp'; cg.style.margin = '0';
@@ -1609,7 +1641,7 @@ function addArresteeRow() {
   clist.appendChild(makeChargeLine(false));
   cg.appendChild(ch); cg.appendChild(clist);
 
-  row.appendChild(hd); row.appendChild(fr); row.appendChild(cg);
+  row.appendChild(hd); row.appendChild(fr); row.appendChild(mg); row.appendChild(cg);
   $('arr-rows').appendChild(row);
 }
 
@@ -1678,7 +1710,9 @@ async function submitLog() {
     const ev      = row.querySelector('.arr-ev')?.value.trim();
     const charges = Array.from(row.querySelectorAll('.charge-sel')).map(s=>s.value).filter(Boolean);
     if (!name||!ev||!charges.length) return showMsg('add-log-msg','Complete all fields for each arrested person.','err');
-    arrestees.push({name, evidence:ev, charges:charges.join(', ')});
+    const mugFile = row.querySelector('.arr-mugshot')?.files[0] || null;
+    const suspectId = row.dataset.suspectId || null;
+    arrestees.push({name, evidence:ev, charges:charges.join(', '), _mugFile: mugFile, _suspectId: suspectId});
   }
 
   const btn = $('log-submit');
@@ -1704,9 +1738,48 @@ async function submitLog() {
   if (error) return showMsg('add-log-msg','Error: '+error.message,'err');
 
   if (arrestees.length && newLog?.id) {
-    await db().from('log_arrestees').insert(arrestees.map(a => ({log_id:newLog.id,...a})));
-    // Link any matching suspect records by name
-    await linkArresteesToSuspects(newLog.id, arrestees.map(a => a.name));
+    // Upload mugshots and upsert suspect records before inserting log_arrestees
+    const enriched = await Promise.all(arrestees.map(async a => {
+      const { _mugFile, _suspectId, ...base } = a;
+      let suspectId = _suspectId || null;
+      let mugshotUrl = null;
+
+      // Upload mugshot if provided
+      if (_mugFile) {
+        const ext  = _mugFile.name.split('.').pop();
+        const path = 'suspects/' + base.name.toLowerCase().replace(/\s+/g,'-') + '-' + Date.now() + '.' + ext;
+        const { error: upErr } = await db().storage.from('mugshots').upload(path, _mugFile, { upsert: true });
+        if (!upErr) {
+          const { data: urlData } = db().storage.from('mugshots').getPublicUrl(path);
+          mugshotUrl = urlData.publicUrl;
+        }
+      }
+
+      // Upsert suspect record
+      if (suspectId) {
+        // Update existing suspect
+        const upd = {};
+        if (mugshotUrl) upd.mugshot_url = mugshotUrl;
+        if (Object.keys(upd).length) await db().from('suspects').update(upd).eq('id', suspectId);
+      } else {
+        // Check by name (case-insensitive)
+        const { data: existing } = await db().from('suspects').select('id').ilike('name', base.name).maybeSingle();
+        if (existing) {
+          suspectId = existing.id;
+          if (mugshotUrl) await db().from('suspects').update({ mugshot_url: mugshotUrl }).eq('id', suspectId);
+        } else if (mugshotUrl || true) {
+          // Create new suspect record
+          const { data: ns } = await db().from('suspects').insert({ name: base.name, mugshot_url: mugshotUrl }).select('id').single();
+          if (ns) suspectId = ns.id;
+        }
+      }
+
+      return { ...base, suspect_id: suspectId };
+    }));
+
+    await db().from('log_arrestees').insert(enriched.map(a => ({log_id:newLog.id,...a})));
+    // Refresh suspect cache
+    _suspectsCache = null;
   }
 
   showMsg('add-log-msg','✅ Seizure log submitted!','ok');
