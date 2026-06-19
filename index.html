@@ -539,6 +539,7 @@ textarea.fi{resize:vertical;min-height:80px}
         <button class="sb-btn" data-tab="dispatch"><span class="sb-icon">📡</span>Dispatch Centre</button>
         <button class="sb-btn" data-tab="stats"><span class="sb-icon">📊</span>My Stats</button>
         <button class="sb-btn" data-tab="analytics"><span class="sb-icon">📈</span>Analytics</button>
+        <button class="sb-btn" data-tab="suspects"><span class="sb-icon">🪪</span>Suspects</button>
         <button class="sb-btn" data-tab="mail"><span class="sb-icon">✉️</span>IC Intranet <span id="sb-mail-badge" style="margin-left:auto;background:var(--gold);color:#0a0c0f;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;display:none"></span></button>
         <button class="sb-btn admin-only" data-tab="apps" style="display:none"><span class="sb-icon">📝</span>Applications <span id="sb-apps-badge" style="margin-left:auto;background:var(--gold);color:#0a0c0f;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;display:none"></span></button>
         <button class="sb-btn admin-only" data-tab="users" style="display:none"><span class="sb-icon">👥</span>Manage Officers</button>
@@ -648,7 +649,7 @@ textarea.fi{resize:vertical;min-height:80px}
               <tbody id="dispatch-table"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">Loading...</td></tr></tbody>
             </table></div>
           </div>
-          <div style="margin-top:1rem;font-size:11px;color:var(--ts);text-align:center">📡 Manual entry for now — LUA in-game radio integration coming soon to auto-log codes.</div>
+          <div style="margin-top:1rem;font-size:11px;color:var(--ts);text-align:center">📡 In-game radio integration active — ten-codes broadcast via /r sync automatically.</div>
 
           <div class="sec-hd" style="margin-top:2rem"><div class="tag">Reference</div><h2>Radio Code Reference</h2></div>
           <div class="dispatch-ref-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem">
@@ -836,6 +837,32 @@ textarea.fi{resize:vertical;min-height:80px}
         </div>
 
         <!-- MAIL -->
+
+        <div class="tab-pane" id="tab-suspects">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+            <div>
+              <h2 style="margin:0">Suspect Records</h2>
+              <div style="color:var(--ts);font-size:13px;margin-top:2px">Known offenders — mugshots &amp; history</div>
+            </div>
+            <button class="btn primary" id="suspect-add-btn">＋ Add Suspect</button>
+          </div>
+          <div id="suspect-form-wrap" style="display:none;background:var(--bg2);border:1px solid var(--border-d);border-radius:10px;padding:1.5rem;margin-bottom:1.5rem">
+            <h3 style="margin:0 0 1rem" id="suspect-form-title">Add Suspect</h3>
+            <input type="hidden" id="suspect-edit-id" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+              <div><label class="flbl">Full Name *</label><input class="fi" id="suspect-name" placeholder="e.g. Marcus Webb" /></div>
+              <div><label class="flbl">Mugshot (image)</label><input type="file" id="suspect-photo" accept="image/*" class="fi" /></div>
+            </div>
+            <div style="margin-bottom:1rem"><label class="flbl">Notes / Known Info</label><textarea class="fi" id="suspect-notes" rows="2" placeholder="Known aliases, vehicle, area of operation..."></textarea></div>
+            <div id="suspect-form-msg" style="margin-bottom:8px;font-size:13px;color:var(--gold)"></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn primary" id="suspect-save-btn">Save</button>
+              <button class="btn" id="suspect-cancel-btn">Cancel</button>
+            </div>
+          </div>
+          <div style="margin-bottom:1rem"><input class="fi" id="suspect-search" placeholder="Search by name..." style="max-width:320px" oninput="filterSuspects(this.value)" /></div>
+          <div id="suspects-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1rem"></div>
+        </div>
         <div class="tab-pane" id="tab-mail">
           <div class="mail-wrap">
             <div class="mail-sidebar">
@@ -1207,6 +1234,7 @@ document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
     if (t === 'mail')  loadMail('inbox');
     if (t === 'apps')  loadApps();
     if (t === 'users') loadUsers();
+    if (t === 'suspects') loadSuspects();
   });
 });
 
@@ -1284,6 +1312,13 @@ async function loadDashLogs() {
   let arrMap = {};
   if (logIds.length) {
     const { data: arr } = await db().from('log_arrestees').select('*').in('log_id', logIds);
+    // Build a lookup of suspect_id -> mugshot_url for inline display
+    const suspectIds = [...new Set((arr||[]).filter(a=>a.suspect_id).map(a=>a.suspect_id))];
+    let suspectMugshots = {};
+    if (suspectIds.length) {
+      const { data: susp } = await db().from('suspects').select('id,mugshot_url').in('id', suspectIds);
+      (susp||[]).forEach(s => { if (s.mugshot_url) suspectMugshots[s.id] = s.mugshot_url; });
+    }
     (arr||[]).forEach(a => { if(!arrMap[a.log_id]) arrMap[a.log_id]=[]; arrMap[a.log_id].push(a); });
   }
 
@@ -1341,7 +1376,11 @@ async function loadDashLogs() {
       arrestees.forEach((a,i) => {
         const ar = document.createElement('div');
         ar.style.cssText = 'background:rgba(10,12,15,.5);border:1px solid var(--border-d);border-radius:6px;padding:10px 14px;margin-bottom:6px';
-        ar.innerHTML = `<div style="font-size:13px;font-weight:600;margin-bottom:4px">${a.name||'Unknown'}</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>${a.evidence?`<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> ${a.evidence.startsWith('http')?`<a href="${a.evidence}" target="_blank" style="color:var(--gold)">View</a>`:a.evidence}</div>`:''}`;
+        const mugUrl = a.suspect_id ? (suspectMugshots[a.suspect_id]||null) : null;
+        ar.innerHTML = `<div style="display:flex;gap:10px;align-items:flex-start">
+          ${mugUrl ? `<img src="${mugUrl}" style="width:48px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border-d);flex-shrink:0" />` : ''}
+          <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">${a.name||'Unknown'}</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>${a.evidence?`<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> ${a.evidence.startsWith('http')?`<a href="${a.evidence}" target="_blank" style="color:var(--gold)">View</a>`:a.evidence}</div>`:''}</div>
+        </div>`;
         ad.appendChild(ar);
       });
       entry.appendChild(ad);
@@ -1362,6 +1401,15 @@ async function loadDashLogs() {
   });
   container.innerHTML = '';
   container.appendChild(frag);
+}
+
+async function fetchSuspectMugshotsForArrestees(arrestees) {
+  const ids = [...new Set(arrestees.filter(a=>a.suspect_id).map(a=>a.suspect_id))];
+  if (!ids.length) return {};
+  const { data } = await db().from('suspects').select('id,mugshot_url').in('id', ids);
+  const map = {};
+  (data||[]).forEach(s => { if (s.mugshot_url) map[s.id] = s.mugshot_url; });
+  return map;
 }
 
 function openLogModal(l, arrestees) {
@@ -1392,6 +1440,7 @@ function openLogModal(l, arrestees) {
   // Arrested persons
   const arDiv = $('mv-arrested');
   arDiv.innerHTML = '';
+  fetchSuspectMugshotsForArrestees(arrestees).then(suspectMugshots => {
   if (arrestees.length) {
     const hd = document.createElement('div');
     hd.innerHTML = '<div class="modal-divider"></div><div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:1rem">🚔 Arrested Persons (' + arrestees.length + ')</div>';
@@ -1399,10 +1448,17 @@ function openLogModal(l, arrestees) {
     arrestees.forEach(a => {
       const ad = document.createElement('div');
       ad.style.cssText = 'background:rgba(10,12,15,.5);border:1px solid var(--border-d);border-radius:6px;padding:10px 14px;margin-bottom:8px';
-      ad.innerHTML = '<div style="font-weight:600;margin-bottom:4px">' + (a.name||'Unknown') + '</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ' + (a.charges||'—') + '</div>' + (a.evidence?'<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> ' + (a.evidence.startsWith('http')?'<a href="'+a.evidence+'" target="_blank" style="color:var(--gold)">View</a>':a.evidence) + '</div>':'');
+      const mugM = a.suspect_id ? (suspectMugshots[a.suspect_id]||null) : null;
+      ad.innerHTML = '<div style="display:flex;gap:12px;align-items:flex-start">'
+        + (mugM ? '<img src="'+mugM+'" style="width:56px;height:70px;object-fit:cover;border-radius:5px;border:1px solid var(--border-d);flex-shrink:0" />' : '')
+        + '<div><div style="font-weight:600;margin-bottom:4px">' + (a.name||'Unknown') + '</div>'
+        + '<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ' + (a.charges||'—') + '</div>'
+        + (a.evidence?'<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> '+(a.evidence.startsWith('http')?'<a href="'+a.evidence+'" target="_blank" style="color:var(--gold)">View</a>':a.evidence)+'</div>':'')
+        + '</div></div>';
       arDiv.appendChild(ad);
     });
   }
+  }); // end fetchSuspectMugshotsForArrestees
 
   // Edit section
   const editPane = $('modal-edit');
@@ -1649,6 +1705,8 @@ async function submitLog() {
 
   if (arrestees.length && newLog?.id) {
     await db().from('log_arrestees').insert(arrestees.map(a => ({log_id:newLog.id,...a})));
+    // Link any matching suspect records by name
+    await linkArresteesToSuspects(newLog.id, arrestees.map(a => a.name));
   }
 
   showMsg('add-log-msg','✅ Seizure log submitted!','ok');
@@ -2621,6 +2679,171 @@ window.addEventListener('load', () => {
     } catch(e) { sessionStorage.removeItem('vs'); }
   }, 1000);
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUSPECTS — mugshot records, linked to log_arrestees via suspect_id
+// ═══════════════════════════════════════════════════════════════════════════
+let _suspectsCache = null;
+
+async function loadSuspects() {
+  const grid = $('suspects-grid');
+  grid.innerHTML = '<div style="color:var(--ts);padding:1rem">Loading...</div>';
+  const { data, error } = await db().from('suspects')
+    .select('*')
+    .order('name', { ascending: true });
+  if (error) {
+    grid.innerHTML = '<div style="color:#f44">Error loading suspects: ' + error.message + '</div>';
+    return;
+  }
+  _suspectsCache = data || [];
+  renderSuspectsGrid(_suspectsCache);
+}
+
+function filterSuspects(q) {
+  if (!_suspectsCache) return;
+  const filtered = q
+    ? _suspectsCache.filter(s => s.name.toLowerCase().includes(q.toLowerCase()))
+    : _suspectsCache;
+  renderSuspectsGrid(filtered);
+}
+
+function renderSuspectsGrid(suspects) {
+  const grid = $('suspects-grid');
+  if (!suspects.length) {
+    grid.innerHTML = '<div style="color:var(--ts);padding:1rem">No suspects found.</div>';
+    return;
+  }
+  grid.innerHTML = '';
+  suspects.forEach(s => {
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--bg2);border:1px solid var(--border-d);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .15s';
+    card.onmouseenter = () => card.style.borderColor = 'var(--gold)';
+    card.onmouseleave = () => card.style.borderColor = 'var(--border-d)';
+    card.innerHTML =
+      '<div style="width:100%;height:180px;background:rgba(10,12,15,.8);overflow:hidden">'
+        + (s.mugshot_url
+          ? '<img src="' + s.mugshot_url + '" style="width:100%;height:100%;object-fit:cover" />'
+          : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;color:var(--border-d)">🪪</div>')
+        + '</div>'
+        + '<div style="padding:10px 12px">'
+        + '<div style="font-weight:700;font-size:14px;margin-bottom:3px">' + (s.name || 'Unknown') + '</div>'
+        + (s.notes ? '<div style="font-size:11px;color:var(--ts);line-height:1.4">' + s.notes + '</div>' : '')
+        + '<div style="margin-top:8px;display:flex;gap:6px">'
+        + '<button class="btn" style="font-size:11px;padding:3px 8px" data-sid="'+s.id+'" onclick="event.stopPropagation();openSuspectEditById(this.dataset.sid)">Edit</button>'
+        + ((officer&&officer.role==='admin') ? '<button class="btn danger" style="font-size:11px;padding:3px 8px" data-sid="'+s.id+'" onclick="event.stopPropagation();deleteSuspect(this.dataset.sid)">Delete</button>' : '')
+        + '</div></div>';
+    grid.appendChild(card);
+  });
+}
+
+function openSuspectEditById(id) {
+  const s = (_suspectsCache||[]).find(x => x.id === id);
+  if (s) openSuspectEdit(s);
+}
+
+function openSuspectEdit(s) {
+  $('suspect-form-title').textContent = 'Edit Suspect';
+  $('suspect-edit-id').value = s.id;
+  $('suspect-name').value = s.name || '';
+  $('suspect-notes').value = s.notes || '';
+  $('suspect-photo').value = '';
+  $('suspect-form-msg').textContent = s.mugshot_url ? '📷 Mugshot on file. Upload a new one to replace it.' : '';
+  $('suspect-form-wrap').style.display = 'block';
+  $('suspect-name').focus();
+}
+
+async function deleteSuspect(id) {
+  if (!confirm('Delete this suspect record and their mugshot?')) return;
+  // Delete the storage file first
+  const { data: row } = await db().from('suspects').select('mugshot_url').eq('id', id).single();
+  if (row?.mugshot_url) {
+    const path = row.mugshot_url.split('/mugshots/')[1];
+    if (path) await db().storage.from('mugshots').remove([path]);
+  }
+  await db().from('suspects').delete().eq('id', id);
+  loadSuspects();
+}
+
+// Add button
+document.addEventListener('DOMContentLoaded', () => {
+  $('suspect-add-btn').addEventListener('click', () => {
+    $('suspect-form-title').textContent = 'Add Suspect';
+    $('suspect-edit-id').value = '';
+    $('suspect-name').value = '';
+    $('suspect-notes').value = '';
+    $('suspect-photo').value = '';
+    $('suspect-form-msg').textContent = '';
+    $('suspect-form-wrap').style.display = 'block';
+    $('suspect-name').focus();
+  });
+
+  $('suspect-cancel-btn').addEventListener('click', () => {
+    $('suspect-form-wrap').style.display = 'none';
+  });
+
+  $('suspect-save-btn').addEventListener('click', async () => {
+    const name = $('suspect-name').value.trim();
+    if (!name) { $('suspect-form-msg').textContent = 'Name is required.'; return; }
+    const notes = $('suspect-notes').value.trim();
+    const file  = $('suspect-photo').files[0];
+    const editId = $('suspect-edit-id').value;
+    $('suspect-form-msg').textContent = 'Saving...';
+
+    let mugshot_url = null;
+
+    if (file) {
+      // Upload to Supabase Storage bucket 'mugshots'
+      const ext  = file.name.split('.').pop();
+      const path = 'suspects/' + name.toLowerCase().replace(/\s+/g,'-') + '-' + Date.now() + '.' + ext;
+      const { error: upErr } = await db().storage.from('mugshots').upload(path, file, { upsert: true });
+      if (upErr) { $('suspect-form-msg').textContent = 'Upload failed: ' + upErr.message; return; }
+      const { data: urlData } = db().storage.from('mugshots').getPublicUrl(path);
+      mugshot_url = urlData.publicUrl;
+    }
+
+    if (editId) {
+      // Update existing
+      const payload = { name, notes };
+      if (mugshot_url) payload.mugshot_url = mugshot_url;
+      const { error } = await db().from('suspects').update(payload).eq('id', editId);
+      if (error) { $('suspect-form-msg').textContent = 'Error: ' + error.message; return; }
+    } else {
+      // Check for existing by name (case-insensitive)
+      const normName = name.toLowerCase().replace(/\s+/g,' ').trim();
+      const { data: existing } = await db().from('suspects')
+        .select('id').ilike('name', normName).maybeSingle();
+      if (existing) {
+        // Update the existing record instead of duplicating
+        const payload = { notes };
+        if (mugshot_url) payload.mugshot_url = mugshot_url;
+        const { error } = await db().from('suspects').update(payload).eq('id', existing.id);
+        if (error) { $('suspect-form-msg').textContent = 'Error: ' + error.message; return; }
+      } else {
+        // Insert new suspect
+        const { error } = await db().from('suspects').insert({ name, notes, mugshot_url });
+        if (error) { $('suspect-form-msg').textContent = 'Error: ' + error.message; return; }
+      }
+    }
+
+    $('suspect-form-wrap').style.display = 'none';
+    loadSuspects();
+  });
+});
+
+// Link suspect to arrestee when name matches — called after a log is submitted
+async function linkArresteesToSuspects(logId, arresteeNames) {
+  for (const name of arresteeNames) {
+    const { data: suspect } = await db().from('suspects')
+      .select('id').ilike('name', name.trim()).maybeSingle();
+    if (suspect) {
+      await db().from('log_arrestees')
+        .update({ suspect_id: suspect.id })
+        .eq('log_id', logId)
+        .ilike('name', name.trim());
+    }
+  }
+}
+
 </script>
 </body>
 </html>
