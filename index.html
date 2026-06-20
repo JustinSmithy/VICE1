@@ -138,7 +138,7 @@ textarea.fi{resize:vertical;min-height:80px}
 .duty-lbl{font-size:12px;font-weight:700;color:#6adba0;letter-spacing:1px}
 .duty-meta{font-size:11px;color:var(--ts);line-height:1.7;padding:2px 1.25rem 8px}
 .sb-bottom{margin-top:auto;padding:8px;border-top:1px solid var(--border-d)}
-.dash-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.dash-main{flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto}
 .dash-top{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border-d);background:#0d1117;flex-shrink:0}
 .dash-welcome{font-size:18px;font-weight:700;margin-bottom:2px}
 .dash-crumb{font-size:12px;color:var(--ts)}
@@ -3032,6 +3032,7 @@ async function renderSuspectsGrid(suspects) {
     card.style.cssText = 'background:var(--bg2);border:1px solid var(--border-d);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .15s';
     card.onmouseenter = () => card.style.borderColor = 'var(--gold)';
     card.onmouseleave = () => card.style.borderColor = 'var(--border-d)';
+    card.addEventListener('click', e => { if (!e.target.closest('button') && !e.target.closest('input')) openSuspectModal(s.id); });
     card.innerHTML =
       '<div style="width:100%;height:180px;background:rgba(10,12,15,.8);overflow:hidden">'
         + (s.mugshot_url
@@ -3331,23 +3332,40 @@ async function globalSearch(query) {
   const q = query.trim();
 
   // Run each query independently so one failure doesn't kill the rest
-  const safe = async (fn) => { try { const r = await fn(); return r.data || []; } catch(e) { return []; } };
+  const safe = async (fn, label) => {
+    try {
+      const r = await fn();
+      if (r.error) { console.warn('Search error ['+label+']:', r.error.message); return []; }
+      return r.data || [];
+    } catch(e) { console.warn('Search exception ['+label+']:', e); return []; }
+  };
 
   const [logs, suspects, officersRes, dispatch] = await Promise.all([
-    safe(() => db().from('seizure_logs').select('id,drug,firearm,location,created_at,log_type,drug_detail,firearm_detail,value').or(`drug.ilike.%${q}%,firearm.ilike.%${q}%,location.ilike.%${q}%,notes.ilike.%${q}%`).limit(10)),
-    safe(() => db().from('suspects').select('id,name,affiliations,known_vehicle,notes,mugshot_url').or(`name.ilike.%${q}%`).limit(10)),
-    safe(() => db().from('officers').select('id,name,badge,rank').or(`name.ilike.%${q}%,badge.ilike.%${q}%`).eq('verified',true).limit(10)),
-    safe(() => db().from('dispatch_calls').select('id,code,details,location,officer_name,created_at,status').or(`code.ilike.%${q}%,details.ilike.%${q}%,location.ilike.%${q}%,officer_name.ilike.%${q}%`).limit(10)),
+    safe(() => db().from('seizure_logs').select('id,drug,firearm,location,created_at,log_type,drug_detail,firearm_detail,value').ilike('location', `%${q}%`).limit(10), 'logs-location'),
+    safe(() => db().from('suspects').select('id,name,affiliations,known_vehicle,notes,mugshot_url').ilike('name', `%${q}%`).limit(10), 'suspects'),
+    safe(() => db().from('officers').select('id,name,badge,rank').or(`name.ilike.%${q}%,badge.ilike.%${q}%`).eq('verified',true).limit(10), 'officers'),
+    safe(() => db().from('dispatch_calls').select('id,code,details,location,officer_name,created_at,status').ilike('officer_name', `%${q}%`).limit(10), 'dispatch'),
   ]);
 
-  const total = logs.length + suspects.length + officersRes.length + dispatch.length;
+  // Also search logs by drug/officer name separately and merge
+  const [logsByDrug, logsByOfficer] = await Promise.all([
+    safe(() => db().from('seizure_logs').select('id,drug,firearm,location,created_at,log_type,drug_detail,firearm_detail,value').ilike('drug', `%${q}%`).limit(5), 'logs-drug'),
+    safe(() => db().from('seizure_logs').select('id,drug,firearm,location,created_at,log_type,drug_detail,firearm_detail,value').ilike('notes', `%${q}%`).limit(5), 'logs-notes'),
+  ]);
+
+  // Merge and deduplicate logs by id
+  const allLogs = [...logs, ...logsByDrug, ...logsByOfficer];
+  const seenIds = new Set();
+  const uniqueLogs = allLogs.filter(l => { if (seenIds.has(l.id)) return false; seenIds.add(l.id); return true; });
+
+  const total = uniqueLogs.length + suspects.length + officersRes.length + dispatch.length;
 
   if (!total) { res.innerHTML = '<div style="color:var(--ts);padding:1rem">No results found for "' + q + '"</div>'; return; }
 
   let html = '';
 
-  if (logs.length) {
-    html += searchGroup('📋 Seizure Logs', logs.map(l =>
+  if (uniqueLogs.length) {
+    html += searchGroup('📋 Seizure Logs', uniqueLogs.map(l =>
       `<div style="padding:10px 14px;border-bottom:1px solid var(--border-d);cursor:pointer" onclick="document.querySelector('.sb-btn[data-tab=logs]').click()">
         <div style="font-weight:600;font-size:13px">Log #${l.id} — ${l.drug_detail||l.drug||l.firearm_detail||l.firearm||l.log_type||'Log'}</div>
         <div style="font-size:12px;color:var(--ts)">${l.location||'—'} · ${fmtDate(l.created_at)} · ${fmtVal(l.value)}</div>
@@ -3651,7 +3669,87 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+
+function closeSuspectModal() {
+  $('suspect-modal-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function openSuspectModal(suspectId) {
+  const overlay = $('suspect-modal-overlay');
+  const content = $('suspect-modal-content');
+  content.innerHTML = '<div style="padding:2rem;color:var(--ts)">Loading...</div>';
+  overlay.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+
+  const s = (_suspectsCache||[]).find(x => x.id === suspectId);
+  if (!s) { content.innerHTML = '<div style="padding:2rem;color:var(--ts)">Not found.</div>'; return; }
+
+  // Fetch arrest logs
+  let arrestsHtml = '';
+  try {
+    const { data: arrests } = await db()
+      .from('log_arrestees')
+      .select('log_id, name, charges, evidence, seizure_logs(id, created_at, location, drug, drug_detail, firearm, firearm_detail, log_type, value, officer_id, officers(name))')
+      .eq('suspect_id', suspectId)
+      .order('log_id', { ascending: false });
+
+    if (arrests?.length) {
+      arrestsHtml = '<div style="padding:1.2rem 1.5rem;border-top:1px solid var(--border-d)">'
+        + '<div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--gold);margin-bottom:10px">ARREST HISTORY (' + arrests.length + ')</div>'
+        + arrests.map(a => {
+            const l = a.seizure_logs;
+            const item = l?.drug_detail||l?.drug||l?.firearm_detail||l?.firearm||l?.log_type||'Log';
+            return `<div style="background:rgba(10,12,15,.5);border:1px solid var(--border-d);border-radius:6px;padding:10px 14px;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="color:var(--gold);font-weight:600">Log #${l?.id||a.log_id}</span>
+                <span style="font-size:12px;color:var(--ts)">${l?.created_at ? fmtDate(l.created_at) : '—'}</span>
+              </div>
+              <div style="font-size:13px;margin-bottom:3px">${item} · ${l?.location||'—'}</div>
+              <div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>
+              ${a.evidence ? '<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> '+a.evidence+'</div>' : ''}
+              ${l?.officers?.name ? '<div style="font-size:11px;color:var(--ts);margin-top:4px">Officer: '+l.officers.name+'</div>' : ''}
+            </div>`;
+          }).join('')
+        + '</div>';
+    } else {
+      arrestsHtml = '<div style="padding:1.2rem 1.5rem;border-top:1px solid var(--border-d);color:var(--ts);font-size:13px">No arrest logs on file.</div>';
+    }
+  } catch(e) {}
+
+  content.innerHTML =
+    // Mugshot header
+    (s.mugshot_url
+      ? '<div style="width:100%;height:280px;overflow:hidden"><img src="'+s.mugshot_url+'" style="width:100%;height:100%;object-fit:cover" /></div>'
+      : '<div style="width:100%;height:140px;background:rgba(10,12,15,.8);display:flex;align-items:center;justify-content:center;font-size:64px">🪪</div>')
+    // Info
+    + '<div style="padding:1.2rem 1.5rem">'
+    + '<div style="font-size:22px;font-weight:700;margin-bottom:4px">' + (s.name||'Unknown') + '</div>'
+    + (s.affiliations ? '<div style="color:var(--gold);font-weight:600;font-size:14px;margin-bottom:4px">'+s.affiliations+'</div>' : '')
+    + '<div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:8px">'
+    + (s.known_vehicle ? '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:2px">Known Vehicle</div><div style="font-size:13px">'+s.known_vehicle+'</div></div>' : '')
+    + '</div>'
+    + (s.notes ? '<div style="margin-top:10px;font-size:13px;color:var(--tp);line-height:1.6;background:rgba(10,12,15,.4);border-radius:6px;padding:8px 12px">'+s.notes+'</div>' : '')
+    + '<div style="margin-top:12px;display:flex;gap:8px">'
+    + '<button class="btn" data-sid="'+s.id+'" onclick="closeSuspectModal();openSuspectEditById(this.dataset.sid)">✏️ Edit</button>'
+    + (officer?.role==='admin' ? '<button class="btn danger" data-sid="'+s.id+'" onclick="closeSuspectModal();deleteSuspect(this.dataset.sid)">🗑️ Delete</button>' : '')
+    + '</div></div>'
+    + arrestsHtml;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('suspect-modal-overlay')?.style.display !== 'none') closeSuspectModal();
+});
+
 </script>
+
+<!-- Suspect View Modal -->
+<div id="suspect-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;overflow-y:auto;padding:2rem 1rem" onclick="if(event.target===this)closeSuspectModal()">
+  <div style="background:var(--bg2);border:1px solid var(--border-d);border-radius:12px;max-width:640px;margin:0 auto;padding:0;overflow:hidden;position:relative">
+    <button onclick="closeSuspectModal()" style="position:absolute;top:1rem;right:1.2rem;background:none;border:none;color:var(--ts);font-size:22px;cursor:pointer;z-index:1;line-height:1">✕</button>
+    <div id="suspect-modal-content"></div>
+  </div>
+</div>
 
 <!-- Application Detail Modal -->
 <div id="app-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;overflow-y:auto;padding:2rem 1rem" onclick="if(event.target===this)closeAppModal()">
