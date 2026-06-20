@@ -334,7 +334,7 @@ textarea.fi{resize:vertical;min-height:80px}
             <option value="">— Select rank —</option>
             <option>Officer</option><option>Corporal</option><option>Sergeant</option>
             <option>Lieutenant</option><option>Captain</option>
-            <option>Assistant Chief of Police</option><option>Chief of Police</option>
+            <option>Deputy Chief of Police</option><option>Chief of Police</option>
           </select>
         </div>
         <div class="fgrp"><label class="flbl">Email (Personal File) *</label><input class="fi" type="email" id="app-email" placeholder="e.g. officer@lspd.gov"></div>
@@ -444,7 +444,7 @@ textarea.fi{resize:vertical;min-height:80px}
       <p class="hb-body">The Vice Unit operates under a clear chain of command. Each rank carries defined responsibilities.</p>
       <div class="hb-rank-grid">
         <div class="hb-rank-card"><div class="hb-rbadge">CoP</div><div><div class="hb-rname">Chief of Police</div><div class="hb-rdesc">Highest authority within the Vice Unit. Sets overarching policy, strategy, and unit direction. Final decision-maker on all operational and disciplinary matters.</div></div></div>
-        <div class="hb-rank-card"><div class="hb-rbadge">ACoP</div><div><div class="hb-rname">Assistant Chief of Police</div><div class="hb-rdesc">Supports the Chief of Police in overseeing the division. Shares command responsibilities and acts as Chief in their absence.</div></div></div>
+        <div class="hb-rank-card"><div class="hb-rbadge">DCoP</div><div><div class="hb-rname">Deputy Chief of Police</div><div class="hb-rdesc">Supports the Chief of Police in overseeing the division. Shares command responsibilities and acts as Chief in their absence.</div></div></div>
         <div class="hb-rank-card"><div class="hb-rbadge">CPT</div><div><div class="hb-rname">Captain</div><div class="hb-rdesc">Oversees day-to-day divisional operations and strategy. Responsible for ensuring operations and enforcement are running smoothly.</div></div></div>
         <div class="hb-rank-card"><div class="hb-rbadge">LT</div><div><div class="hb-rname">Lieutenant</div><div class="hb-rdesc">Leads operations on the ground. Coordinates officers during active enforcement, manages operation planning, and reports up to Captain.</div></div></div>
         <div class="hb-rank-card"><div class="hb-rbadge">SGT</div><div><div class="hb-rname">Sergeant</div><div class="hb-rdesc">Supervises patrol officers and junior members. Ensures SOPs are followed and acts as a field supervisor during operations.</div></div></div>
@@ -514,7 +514,7 @@ textarea.fi{resize:vertical;min-height:80px}
           <select class="fi" id="reg-rank">
             <option>Officer</option><option>Corporal</option><option>Sergeant</option>
             <option>Lieutenant</option><option>Captain</option>
-            <option>Assistant Chief of Police</option><option>Chief of Police</option>
+            <option>Deputy Chief of Police</option><option>Chief of Police</option>
           </select>
         </div>
         <div class="fgrp"><label class="flbl">Email Address</label><input class="fi" type="email" id="reg-email" placeholder="officer@lspd.gov"></div>
@@ -2705,7 +2705,7 @@ async function deleteApp(id) {
 // ═══════════════════════════════════════════════════
 // OFFICERS
 // ═══════════════════════════════════════════════════
-const RANKS = ['Officer','Corporal','Sergeant','Lieutenant','Captain','Assistant Chief of Police','Chief of Police'];
+const RANKS = ['Officer','Corporal','Sergeant','Lieutenant','Captain','Deputy Chief of Police','Chief of Police'];
 
 // Officer edit modal
 let editingOfficerId = null;
