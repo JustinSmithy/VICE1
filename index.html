@@ -2097,11 +2097,21 @@ document.querySelectorAll('.mail-folder-btn').forEach(btn => {
   btn.addEventListener('click', () => loadMail(btn.dataset.folder, btn));
 });
 
-$('compose-btn').addEventListener('click', () => {
+$('compose-btn').addEventListener('click', async () => {
   $('compose-pane').style.display = 'block';
   $('mail-reply').style.display   = 'none';
   $('mail-view').innerHTML = '<div style="padding:4rem;text-align:center;color:var(--ts)"><div style="font-size:36px;margin-bottom:12px">✉️</div><p>New message</p></div>';
   ['compose-to','compose-subject','compose-body'].forEach(id => $(id).value = '');
+  // Populate autocomplete datalist
+  const dl = $('officer-suggestions');
+  dl.innerHTML = '';
+  const addOpt = val => { const o = document.createElement('option'); o.value = val; dl.appendChild(o); };
+  addOpt('VICE');
+  try {
+    const { data: offs } = await db().from('officers').select('name,badge').eq('verified', true);
+    (offs||[]).forEach(o => { addOpt(o.name); if (o.badge) addOpt(o.badge); });
+  } catch(e) {}
+  $('compose-to').focus();
 });
 
 $('cancel-compose-btn').addEventListener('click', () => {
@@ -2229,9 +2239,32 @@ async function sendCompose() {
   const subject = $('compose-subject').value.trim();
   const body    = $('compose-body').value.trim();
   if (!toQ || !body) return alert('Please fill in recipient and message.');
-  const { data: officers } = await db().from('officers').select('id,name,badge');
-  const match = (officers||[]).find(o => o.name.toLowerCase()===toQ.toLowerCase() || o.badge.toLowerCase()===toQ.toLowerCase());
-  if (!match) return alert(`Officer "${toQ}" not found. Use their character name or badge number.`);
+
+  const { data: allOfficers } = await db().from('officers').select('id,name,badge').eq('verified', true);
+  const officers = allOfficers || [];
+
+  if (toQ.toLowerCase() === 'vice') {
+    // Unit-wide broadcast — send to all verified officers except self
+    const recipients = officers.filter(o => o.id !== me.id);
+    if (!recipients.length) return alert('No other officers found.');
+    const rows = recipients.map(o => ({
+      from_id: me.id, from_name: officer.name,
+      to_id: o.id, to_name: o.name,
+      subject: '[VICE] ' + subject, body, read: false
+    }));
+    const { error } = await db().from('messages').insert(rows);
+    if (error) return alert('Error: '+error.message);
+    $('compose-pane').style.display = 'none';
+    alert('Unit-wide message sent to ' + recipients.length + ' officers.');
+    loadMail('sent');
+    return;
+  }
+
+  const match = officers.find(o =>
+    o.name.toLowerCase() === toQ.toLowerCase() ||
+    (o.badge && o.badge.toLowerCase() === toQ.toLowerCase())
+  );
+  if (!match) return alert('Officer "' + toQ + '" not found. Start typing their name to see suggestions.');
   const { error } = await db().from('messages').insert({
     from_id: me.id, from_name: officer.name,
     to_id: match.id, to_name: match.name,
@@ -2239,7 +2272,7 @@ async function sendCompose() {
   });
   if (error) return alert('Error: '+error.message);
   $('compose-pane').style.display = 'none';
-  alert('Message sent to '+match.name+'!');
+  alert('Message sent to ' + match.name + '!');
   loadMail('sent');
 }
 
