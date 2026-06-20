@@ -2841,6 +2841,9 @@ if (pfbgEl) {
 }
 
 window.addEventListener('load', () => {
+  // Always load public stats immediately — visible to everyone without login
+  loadPublicStats();
+
   setTimeout(async () => {
     const stored = sessionStorage.getItem('vs');
     if (!stored) return;
