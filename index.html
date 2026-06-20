@@ -795,6 +795,15 @@ textarea.fi{resize:vertical;min-height:80px}
 
         <!-- STATS -->
         <div class="tab-pane" id="tab-stats">
+          <!-- Account / name change -->
+          <div style="background:var(--bg2);border:1px solid var(--border-d);border-radius:10px;padding:1.2rem 1.5rem;margin-bottom:1.5rem">
+            <div style="font-size:13px;font-weight:700;color:var(--gold);letter-spacing:.5px;margin-bottom:10px">ACCOUNT</div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <div><label class="flbl">Character Name</label><input class="fi" id="self-name-input" style="width:220px" placeholder="Full character name" /></div>
+              <div style="padding-top:18px"><button class="btn primary" id="self-name-save-btn">Update Name</button></div>
+              <div id="self-name-msg" style="font-size:12px;padding-top:18px"></div>
+            </div>
+          </div>
           <div class="sec-hd"><div class="tag">Personal</div><h2>My Contribution</h2></div>
           <div class="sg">
             <div class="sc"><div class="sc-lbl">📦 My Seizures</div><div class="sc-val gold" id="st-seizures">—</div></div>
@@ -1171,6 +1180,7 @@ async function loadProfile() {
 
   $('nav-login').style.display  = 'none';
   $('nav-dash').style.display   = '';
+  $('nav-public').style.display = '';
   $('dash-welcome').textContent = `Welcome back, ${officer.rank} ${officer.name.split(' ')[0]}`;
   $('dash-rank-badge').textContent = officer.rank;
   $('duty-meta').textContent = `Badge: ${officer.badge}`;
@@ -1234,7 +1244,10 @@ document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
     if (t === 'logs')  loadDashLogs();
     if (t === 'map')   loadMap();
     if (t === 'dispatch') loadDispatch();
-    if (t === 'stats') loadStats();
+    if (t === 'stats') {
+      loadStats();
+      if ($('self-name-input') && officer) $('self-name-input').value = officer.name || '';
+    }
     if (t === 'analytics') loadAnalytics();
     if (t === 'mail')  loadMail('inbox');
     if (t === 'apps')  loadApps();
@@ -2929,6 +2942,19 @@ async function deleteSuspect(id) {
 
 // Add button
 document.addEventListener('DOMContentLoaded', () => {
+  const selfNameBtn = $('self-name-save-btn');
+  if (selfNameBtn) selfNameBtn.addEventListener('click', async () => {
+    const newName = $('self-name-input').value.trim();
+    const msg = $('self-name-msg');
+    if (!newName) { msg.style.color='#f44'; msg.textContent='Name cannot be empty.'; return; }
+    if (officer && newName === officer.name) { msg.style.color='var(--ts)'; msg.textContent='That is already your name.'; return; }
+    const { error } = await db().from('officers').update({ name: newName }).eq('id', me.id);
+    if (error) { msg.style.color='#f44'; msg.textContent='Error: '+error.message; return; }
+    if (officer) officer.name = newName;
+    $('dash-welcome').textContent = `Welcome back, ${officer?.rank} ${newName.split(' ')[0]}`;
+    msg.style.color='var(--gold)'; msg.textContent='✓ Name updated.';
+  });
+
   $('suspect-add-btn').addEventListener('click', () => {
     $('suspect-form-title').textContent = 'Add Suspect';
     $('suspect-edit-id').value = '';
