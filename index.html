@@ -1310,18 +1310,21 @@ async function loadDashLogs() {
 
   const logIds = logs.map(l => l.id);
   let arrMap = {};
+  let suspectMugshots = {};
   if (logIds.length) {
-    const { data: arr } = await db().from('log_arrestees').select('*').in('log_id', logIds);
-    // Build a lookup of suspect_id -> mugshot_url for inline display
-    const suspectIds = [...new Set((arr||[]).filter(a=>a.suspect_id).map(a=>a.suspect_id))];
-    let suspectMugshots = {};
-    if (suspectIds.length) {
-      try {
-        const { data: susp } = await db().from('suspects').select('id,mugshot_url').in('id', suspectIds);
-        (susp||[]).forEach(s => { if (s.mugshot_url) suspectMugshots[s.id] = s.mugshot_url; });
-      } catch(e) { /* suspects table may not exist yet — mugshots won't show but logs still load */ }
-    }
-    (arr||[]).forEach(a => { if(!arrMap[a.log_id]) arrMap[a.log_id]=[]; arrMap[a.log_id].push(a); });
+    try {
+      const { data: arr, error: arrErr } = await db().from('log_arrestees').select('id,log_id,name,charges,evidence,suspect_id').in('log_id', logIds);
+      if (!arrErr && arr) {
+        const suspectIds = [...new Set(arr.filter(a=>a.suspect_id).map(a=>a.suspect_id))];
+        if (suspectIds.length) {
+          try {
+            const { data: susp } = await db().from('suspects').select('id,mugshot_url').in('id', suspectIds);
+            (susp||[]).forEach(s => { if (s.mugshot_url) suspectMugshots[s.id] = s.mugshot_url; });
+          } catch(e) { /* suspects table not set up yet */ }
+        }
+        arr.forEach(a => { if(!arrMap[a.log_id]) arrMap[a.log_id]=[]; arrMap[a.log_id].push(a); });
+      }
+    } catch(e) { console.warn('loadDashLogs arrestees error:', e); }
   }
 
   const container = $('logs-list');
