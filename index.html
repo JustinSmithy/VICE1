@@ -1486,7 +1486,7 @@ async function loadDashLogs() {
     const top = document.createElement('div');
     top.className = 'le-top';
     const left = document.createElement('div');
-    left.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="badge ${typeCls}">${typeLabel}</span><span class="badge bg-blue">${l.op_type||''}</span>${arrestees.length?`<span class="badge bg-red">${arrestees.length} Arrested</span>`:''}</div><h4>${item} · ${l.location}</h4>`;
+    left.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="badge ${typeCls}">${typeLabel}</span><span class="badge bg-blue">${l.op_type||''}</span>${arrestees.length?`<span class="badge bg-red">${arrestees.length} Arrested</span>`:''}<span style="font-size:11px;color:var(--ts);margin-left:2px">Log #${l.id}</span></div><h4>${item} · ${l.location}</h4>`;
     const right = document.createElement('div');
     right.style.cssText = 'text-align:right;flex-shrink:0;margin-left:12px';
     right.innerHTML = `<div style="color:var(--gold);font-weight:700;font-size:16px">${fmtVal(l.value)}</div><div style="font-size:11px;color:var(--ts);margin-top:2px">${fmtDate(l.created_at)}</div>`;
@@ -1564,7 +1564,7 @@ function openLogModal(l, arrestees) {
   $('modal-title').textContent = 'Seizure Log — ' + fmtDate(l.created_at);
 
   // Summary banner
-  $('modal-summary-left').innerHTML = '<span class="badge ' + (isF&&isD?'bg-gold':isF?'bg-blue':'bg-red') + '">' + typeLabel + '</span><span class="badge bg-blue">' + (l.op_type||'—') + '</span>' + (arrestees.length ? '<span class="badge bg-red">' + arrestees.length + ' Arrested</span>' : '<span class="badge bg-green">No Arrests</span>');
+  $('modal-summary-left').innerHTML = '<span class="badge ' + (isF&&isD?'bg-gold':isF?'bg-blue':'bg-red') + '">' + typeLabel + '</span><span class="badge bg-blue">' + (l.op_type||'—') + '</span>' + (arrestees.length ? '<span class="badge bg-red">' + arrestees.length + ' Arrested</span>' : '<span class="badge bg-green">No Arrests</span>') + '<span style="font-size:11px;color:var(--ts);margin-left:4px">Log #' + l.id + '</span>';
   $('modal-summary-value').textContent = fmtVal(l.value);
 
   // Populate read-only fields
@@ -3019,7 +3019,7 @@ function filterSuspects(q) {
   renderSuspectsGrid(filtered);
 }
 
-function renderSuspectsGrid(suspects) {
+async function renderSuspectsGrid(suspects) {
   const grid = $('suspects-grid');
   if (!suspects.length) {
     grid.innerHTML = '<div style="color:var(--ts);padding:1rem">No suspects found.</div>';
@@ -3028,6 +3028,7 @@ function renderSuspectsGrid(suspects) {
   grid.innerHTML = '';
   suspects.forEach(s => {
     const card = document.createElement('div');
+    card.id = 'suspect-card-' + s.id;
     card.style.cssText = 'background:var(--bg2);border:1px solid var(--border-d);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .15s';
     card.onmouseenter = () => card.style.borderColor = 'var(--gold)';
     card.onmouseleave = () => card.style.borderColor = 'var(--border-d)';
@@ -3042,12 +3043,52 @@ function renderSuspectsGrid(suspects) {
         + (s.affiliations ? '<div style="font-size:11px;color:var(--gold);margin-bottom:2px;font-weight:600">' + s.affiliations + '</div>' : '')
         + (s.known_vehicle ? '<div style="font-size:11px;color:var(--ts)">🚗 ' + s.known_vehicle + '</div>' : '')
         + (s.notes ? '<div style="font-size:11px;color:var(--ts);line-height:1.4;margin-top:3px">' + s.notes + '</div>' : '')
+        + '<div id="suspect-logs-' + s.id + '" style="margin-top:6px;font-size:11px;color:var(--ts)">Loading logs...</div>'
         + '<div style="margin-top:8px;display:flex;gap:6px">'
         + '<button class="btn" style="font-size:11px;padding:3px 8px" data-sid="'+s.id+'" onclick="event.stopPropagation();openSuspectEditById(this.dataset.sid)">Edit</button>'
         + ((officer&&officer.role==='admin') ? '<button class="btn danger" style="font-size:11px;padding:3px 8px" data-sid="'+s.id+'" onclick="event.stopPropagation();deleteSuspect(this.dataset.sid)">Delete</button>' : '')
         + '</div></div>';
     grid.appendChild(card);
   });
+
+  // Fetch linked seizure logs for all suspects in one query
+  const suspectIds = suspects.map(s => s.id);
+  try {
+    const { data: arrests } = await db()
+      .from('log_arrestees')
+      .select('suspect_id, log_id, name, charges, seizure_logs(id, created_at, location, drug, firearm, log_type)')
+      .in('suspect_id', suspectIds);
+
+    // Group by suspect_id
+    const byId = {};
+    (arrests||[]).forEach(a => {
+      if (!byId[a.suspect_id]) byId[a.suspect_id] = [];
+      byId[a.suspect_id].push(a);
+    });
+
+    suspects.forEach(s => {
+      const logsEl = $('suspect-logs-' + s.id);
+      if (!logsEl) return;
+      const entries = byId[s.id];
+      if (!entries?.length) {
+        logsEl.textContent = 'No arrest logs on file.';
+        return;
+      }
+      logsEl.innerHTML = '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:4px">Arrest History (' + entries.length + ')</div>'
+        + entries.map(a => {
+          const l = a.seizure_logs;
+          return `<div style="padding:4px 0;border-top:1px solid var(--border-d)">
+            <span style="color:var(--gold);font-weight:600">Log #${l?.id||a.log_id}</span>
+            <span style="color:var(--ts)"> · ${l?.location||'—'} · ${l?.created_at ? fmtDate(l.created_at) : '—'}</span>
+          </div>`;
+        }).join('');
+    });
+  } catch(e) {
+    suspects.forEach(s => {
+      const logsEl = $('suspect-logs-' + s.id);
+      if (logsEl) logsEl.textContent = '';
+    });
+  }
 }
 
 function openSuspectEditById(id) {
@@ -3287,27 +3328,29 @@ async function globalSearch(query) {
   const res = $('search-results');
   if (!query.trim()) { res.innerHTML = ''; return; }
   res.innerHTML = '<div style="color:var(--ts);padding:1rem">Searching...</div>';
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
 
-  const results = await Promise.all([
-    db().from('seizure_logs').select('id,drug,firearm,location,created_at,log_type,drug_detail,firearm_detail,value').or(`drug.ilike.%${q}%,firearm.ilike.%${q}%,location.ilike.%${q}%,notes.ilike.%${q}%`).limit(10),
-    db().from('suspects').select('id,name,affiliations,known_vehicle,notes,mugshot_url').or(`name.ilike.%${q}%,affiliations.ilike.%${q}%,known_vehicle.ilike.%${q}%,notes.ilike.%${q}%`).limit(10),
-    db().from('officers').select('id,name,badge,rank').or(`name.ilike.%${q}%,badge.ilike.%${q}%`).eq('verified',true).limit(10),
-    db().from('dispatch_calls').select('id,code,details,location,officer_name,created_at,status').or(`code.ilike.%${q}%,details.ilike.%${q}%,location.ilike.%${q}%,officer_name.ilike.%${q}%`).limit(10),
+  // Run each query independently so one failure doesn't kill the rest
+  const safe = async (fn) => { try { const r = await fn(); return r.data || []; } catch(e) { return []; } };
+
+  const [logs, suspects, officersRes, dispatch] = await Promise.all([
+    safe(() => db().from('seizure_logs').select('id,drug,firearm,location,created_at,log_type,drug_detail,firearm_detail,value').or(`drug.ilike.%${q}%,firearm.ilike.%${q}%,location.ilike.%${q}%,notes.ilike.%${q}%`).limit(10)),
+    safe(() => db().from('suspects').select('id,name,affiliations,known_vehicle,notes,mugshot_url').or(`name.ilike.%${q}%`).limit(10)),
+    safe(() => db().from('officers').select('id,name,badge,rank').or(`name.ilike.%${q}%,badge.ilike.%${q}%`).eq('verified',true).limit(10)),
+    safe(() => db().from('dispatch_calls').select('id,code,details,location,officer_name,created_at,status').or(`code.ilike.%${q}%,details.ilike.%${q}%,location.ilike.%${q}%,officer_name.ilike.%${q}%`).limit(10)),
   ]);
 
-  const [logs, suspects, officers, dispatch] = results.map(r => r.data || []);
-  const total = logs.length + suspects.length + officers.length + dispatch.length;
+  const total = logs.length + suspects.length + officersRes.length + dispatch.length;
 
-  if (!total) { res.innerHTML = '<div style="color:var(--ts);padding:1rem">No results found for "' + query + '"</div>'; return; }
+  if (!total) { res.innerHTML = '<div style="color:var(--ts);padding:1rem">No results found for "' + q + '"</div>'; return; }
 
   let html = '';
 
   if (logs.length) {
     html += searchGroup('📋 Seizure Logs', logs.map(l =>
       `<div style="padding:10px 14px;border-bottom:1px solid var(--border-d);cursor:pointer" onclick="document.querySelector('.sb-btn[data-tab=logs]').click()">
-        <div style="font-weight:600;font-size:13px">#${l.id} — ${l.drug_detail||l.drug||l.firearm_detail||l.firearm||l.log_type||'Log'}</div>
-        <div style="font-size:12px;color:var(--ts)">${l.location} · ${fmtDate(l.created_at)} · ${fmtVal(l.value)}</div>
+        <div style="font-weight:600;font-size:13px">Log #${l.id} — ${l.drug_detail||l.drug||l.firearm_detail||l.firearm||l.log_type||'Log'}</div>
+        <div style="font-size:12px;color:var(--ts)">${l.location||'—'} · ${fmtDate(l.created_at)} · ${fmtVal(l.value)}</div>
       </div>`).join(''));
   }
 
@@ -3320,8 +3363,8 @@ async function globalSearch(query) {
       </div>`).join(''));
   }
 
-  if (officers.length) {
-    html += searchGroup('👮 Officers', officers.map(o =>
+  if (officersRes.length) {
+    html += searchGroup('👮 Officers', officersRes.map(o =>
       `<div style="padding:10px 14px;border-bottom:1px solid var(--border-d)">
         <div style="font-weight:600;font-size:13px">${o.name} <span style="color:var(--ts);font-weight:400">· ${o.rank||'Officer'}</span></div>
         <div style="font-size:12px;color:var(--ts)">Badge: ${o.badge}</div>
@@ -3332,11 +3375,11 @@ async function globalSearch(query) {
     html += searchGroup('📡 Dispatch', dispatch.map(d =>
       `<div style="padding:10px 14px;border-bottom:1px solid var(--border-d)">
         <div style="font-weight:600;font-size:13px">${d.code} — ${d.details||'—'}</div>
-        <div style="font-size:12px;color:var(--ts)">${d.location||'—'} · ${d.officer_name} · ${fmtDate(d.created_at)} · <span class="s-${d.status||'active'}">${d.status||'active'}</span></div>
+        <div style="font-size:12px;color:var(--ts)">${d.location||'—'} · ${d.officer_name} · ${fmtDate(d.created_at)}</div>
       </div>`).join(''));
   }
 
-  res.innerHTML = `<div style="font-size:12px;color:var(--ts);margin-bottom:8px">${total} result${total>1?'s':''} for "${query}"</div>` + html;
+  res.innerHTML = `<div style="font-size:12px;color:var(--ts);margin-bottom:8px">${total} result${total>1?'s':''} for "${q}"</div>` + html;
 }
 
 function searchGroup(title, items) {
