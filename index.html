@@ -1383,9 +1383,11 @@ async function loadDashLogs() {
         const ar = document.createElement('div');
         ar.style.cssText = 'background:rgba(10,12,15,.5);border:1px solid var(--border-d);border-radius:6px;padding:10px 14px;margin-bottom:6px';
         const mugUrl = a.suspect_id ? (suspectMugshots[a.suspect_id]||null) : null;
+        const chargeCount = a.charges ? a.charges.split(',').filter(Boolean).length : 0;
+        const highRiskBadge = chargeCount >= 6 ? `<span style="background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;letter-spacing:.5px;margin-left:6px">⚠ HIGH RISK</span>` : '';
         ar.innerHTML = `<div style="display:flex;gap:10px;align-items:flex-start">
           ${mugUrl ? `<img src="${mugUrl}" style="width:48px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border-d);flex-shrink:0" />` : ''}
-          <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">${a.name||'Unknown'}</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>${a.evidence?`<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> ${a.evidence.startsWith('http')?`<a href="${a.evidence}" target="_blank" style="color:var(--gold)">View</a>`:a.evidence}</div>`:''}</div>
+          <div><div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center">${a.name||'Unknown'}${highRiskBadge}</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>${a.evidence?`<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> ${a.evidence.startsWith('http')?`<a href="${a.evidence}" target="_blank" style="color:var(--gold)">View</a>`:a.evidence}</div>`:''}</div>
         </div>`;
         ad.appendChild(ar);
       });
@@ -1457,9 +1459,11 @@ function openLogModal(l, arrestees) {
       const ad = document.createElement('div');
       ad.style.cssText = 'background:rgba(10,12,15,.5);border:1px solid var(--border-d);border-radius:6px;padding:10px 14px;margin-bottom:8px';
       const mugM = a.suspect_id ? (suspectMugshots[a.suspect_id]||null) : null;
+      const mChargeCount = a.charges ? a.charges.split(',').filter(Boolean).length : 0;
+      const mHighRisk = mChargeCount >= 6 ? ' <span style="background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;letter-spacing:.5px">⚠ HIGH RISK</span>' : '';
       ad.innerHTML = '<div style="display:flex;gap:12px;align-items:flex-start">'
         + (mugM ? '<img src="'+mugM+'" style="width:56px;height:70px;object-fit:cover;border-radius:5px;border:1px solid var(--border-d);flex-shrink:0" />' : '')
-        + '<div><div style="font-weight:600;margin-bottom:4px">' + (a.name||'Unknown') + '</div>'
+        + '<div style="flex:1"><div style="font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">' + (a.name||'Unknown') + mHighRisk + '</div>'
         + '<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ' + (a.charges||'—') + '</div>'
         + (a.evidence?'<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> '+(a.evidence.startsWith('http')?'<a href="'+a.evidence+'" target="_blank" style="color:var(--gold)">View</a>':a.evidence)+'</div>':'')
         + '</div></div>';
