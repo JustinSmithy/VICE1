@@ -337,7 +337,7 @@ textarea.fi{resize:vertical;min-height:80px}
             <option>Deputy Chief of Police</option><option>Chief of Police</option>
           </select>
         </div>
-        <div class="fgrp"><label class="flbl">Email (Personal File) *</label><input class="fi" type="email" id="app-email" placeholder="e.g. officer@lspd.gov"></div>
+        <div class="fgrp"><label class="flbl">Email (Personal File) *</label><input class="fi" type="email" id="app-email" placeholder="e.g. officer@hzgaming.net"></div>
         <div class="fgrp"><label class="flbl">Discord *</label><input class="fi" type="text" id="app-discord" placeholder="e.g. @marcuswebb"></div>
         <div class="fgrp apply-full"><label class="flbl">Why do you want to join the Vice Unit? *</label><textarea class="fi" id="app-why" placeholder="Tell us IC why your character wants to join..."></textarea></div>
       </div>
@@ -502,7 +502,7 @@ textarea.fi{resize:vertical;min-height:80px}
       </div>
       <div id="auth-msg"></div>
       <div id="signin-form">
-        <div class="fgrp"><label class="flbl">Email Address</label><input class="fi" type="email" id="si-email" placeholder="officer@lspd.gov"></div>
+        <div class="fgrp"><label class="flbl">Email Address</label><input class="fi" type="email" id="si-email" placeholder="officer@hzgaming.net"></div>
         <div class="fgrp"><label class="flbl">Password</label><input class="fi" type="password" id="si-pass" placeholder="Enter password"></div>
         <button class="sbtn" id="si-btn">Sign In to Portal</button>
         <div class="auth-note">🔒 Passwords encrypted by Supabase (bcrypt)</div>
@@ -517,7 +517,7 @@ textarea.fi{resize:vertical;min-height:80px}
             <option>Deputy Chief of Police</option><option>Chief of Police</option>
           </select>
         </div>
-        <div class="fgrp"><label class="flbl">Email Address</label><input class="fi" type="email" id="reg-email" placeholder="officer@lspd.gov"></div>
+        <div class="fgrp"><label class="flbl">Email Address</label><input class="fi" type="email" id="reg-email" placeholder="officer@hzgaming.net"></div>
         <div class="fgrp"><label class="flbl">Password</label><input class="fi" type="password" id="reg-pass" placeholder="Min. 8 characters"></div>
         <div class="fgrp"><label class="flbl">Confirm Password</label><input class="fi" type="password" id="reg-pass2" placeholder="Repeat password"></div>
         <button class="sbtn" id="reg-btn">Create Account</button>
@@ -542,6 +542,9 @@ textarea.fi{resize:vertical;min-height:80px}
         <button class="sb-btn" data-tab="suspects"><span class="sb-icon">🪪</span>Suspects</button>
         <button class="sb-btn" data-tab="mail"><span class="sb-icon">✉️</span>IC Intranet <span id="sb-mail-badge" style="margin-left:auto;background:var(--gold);color:#0a0c0f;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;display:none"></span></button>
         <button class="sb-btn admin-only" data-tab="apps" style="display:none"><span class="sb-icon">📝</span>Applications <span id="sb-apps-badge" style="margin-left:auto;background:var(--gold);color:#0a0c0f;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;display:none"></span></button>
+        <button class="sb-btn" data-tab="search"><span class="sb-icon">🔍</span>Search</button>
+        <button class="sb-btn" data-tab="ops"><span class="sb-icon">📌</span>Operations</button>
+        <button class="sb-btn admin-only" data-tab="activity" style="display:none"><span class="sb-icon">📅</span>Activity</button>
         <button class="sb-btn admin-only" data-tab="users" style="display:none"><span class="sb-icon">👥</span>Manage Officers</button>
       </div>
       <div class="sb-div"></div>
@@ -877,6 +880,93 @@ textarea.fi{resize:vertical;min-height:80px}
           <div style="margin-bottom:1rem"><input class="fi" id="suspect-search" placeholder="Search by name..." style="max-width:320px" oninput="filterSuspects(this.value)" /></div>
           <div id="suspects-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1rem"></div>
         </div>
+        <!-- ═══════════ SEARCH TAB ═══════════ -->
+        <div class="tab-pane" id="tab-search">
+          <div style="margin-bottom:1.5rem">
+            <h2 style="margin:0 0 6px">Search</h2>
+            <div style="color:var(--ts);font-size:13px;margin-bottom:1rem">Search across seizure logs, suspects, officers and dispatch</div>
+            <div style="display:flex;gap:8px;max-width:560px">
+              <input class="fi" id="global-search-input" placeholder="Search anything..." style="flex:1" />
+              <button class="btn primary" id="global-search-btn" style="white-space:nowrap">🔍 Search</button>
+            </div>
+          </div>
+          <div id="search-results"></div>
+        </div>
+
+        <!-- ═══════════ OPERATIONS TAB ═══════════ -->
+        <div class="tab-pane" id="tab-ops">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:8px">
+            <div><h2 style="margin:0">Operations</h2><div style="color:var(--ts);font-size:13px;margin-top:2px">Command bulletins &amp; mission briefings</div></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn admin-only primary" id="bulletin-add-btn" style="display:none">📌 Post Bulletin</button>
+              <button class="btn primary" id="briefing-add-btn">＋ New Briefing</button>
+            </div>
+          </div>
+
+          <!-- Bulletin form (admin only) -->
+          <div id="bulletin-form-wrap" style="display:none;background:var(--bg2);border:1px solid var(--border-d);border-radius:10px;padding:1.5rem;margin-bottom:1.5rem">
+            <h3 style="margin:0 0 1rem">Post Bulletin</h3>
+            <input type="hidden" id="bulletin-edit-id" />
+            <div style="display:grid;grid-template-columns:1fr auto;gap:1rem;margin-bottom:1rem;align-items:end">
+              <div><label class="flbl">Title *</label><input class="fi" id="bulletin-title" placeholder="e.g. Mandatory briefing this Friday" /></div>
+              <div><label class="flbl">Priority</label>
+                <select class="fi" id="bulletin-priority">
+                  <option value="info">ℹ Info</option>
+                  <option value="normal" selected>📋 Normal</option>
+                  <option value="urgent">🚨 Urgent</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-bottom:1rem"><label class="flbl">Body *</label><textarea class="fi" id="bulletin-body" rows="3" placeholder="Bulletin content..."></textarea></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="bulletin-pinned" /> Pin to top</label>
+              <button class="btn primary" id="bulletin-save-btn">Post</button>
+              <button class="btn" id="bulletin-cancel-btn">Cancel</button>
+              <div id="bulletin-msg" style="font-size:12px;color:var(--gold)"></div>
+            </div>
+          </div>
+
+          <!-- Briefing form -->
+          <div id="briefing-form-wrap" style="display:none;background:var(--bg2);border:1px solid var(--border-d);border-radius:10px;padding:1.5rem;margin-bottom:1.5rem">
+            <h3 style="margin:0 0 1rem" id="briefing-form-title">New Mission Briefing</h3>
+            <input type="hidden" id="briefing-edit-id" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+              <div><label class="flbl">Operation Title *</label><input class="fi" id="briefing-title" placeholder="e.g. Operation Clean Sweep" /></div>
+              <div><label class="flbl">Location *</label><input class="fi" id="briefing-location" placeholder="e.g. Idlewood, LS" /></div>
+            </div>
+            <div style="margin-bottom:1rem"><label class="flbl">Objective *</label><textarea class="fi" id="briefing-objective" rows="2" placeholder="What is the aim of this operation?"></textarea></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+              <div><label class="flbl">Officers Involved</label><input class="fi" id="briefing-officers" placeholder="e.g. J. Smithy, K. Webb" /></div>
+              <div><label class="flbl">Linked Seizure Log ID (optional)</label><input class="fi" id="briefing-log-id" type="number" placeholder="e.g. 42" /></div>
+            </div>
+            <div style="margin-bottom:1rem"><label class="flbl">Outcome / Notes</label><textarea class="fi" id="briefing-outcome" rows="2" placeholder="Result of the operation..."></textarea></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select class="fi" id="briefing-status" style="width:160px">
+                <option value="active">🟡 Active</option>
+                <option value="completed">✅ Completed</option>
+                <option value="cancelled">❌ Cancelled</option>
+              </select>
+              <button class="btn primary" id="briefing-save-btn">Save</button>
+              <button class="btn" id="briefing-cancel-btn">Cancel</button>
+              <div id="briefing-msg" style="font-size:12px;color:var(--gold)"></div>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div id="ops-content"></div>
+        </div>
+
+        <!-- ═══════════ ACTIVITY TRACKER TAB ═══════════ -->
+        <div class="tab-pane" id="tab-activity">
+          <div style="margin-bottom:1.5rem"><h2 style="margin:0">Activity Tracker</h2><div style="color:var(--ts);font-size:13px;margin-top:2px">Officer activity derived from seizure logs and dispatch calls</div></div>
+          <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+            <button class="btn active" data-activity-period="7" id="act-7">Last 7 days</button>
+            <button class="btn" data-activity-period="30" id="act-30">Last 30 days</button>
+            <button class="btn" data-activity-period="all" id="act-all">All time</button>
+          </div>
+          <div id="activity-table"></div>
+        </div>
+
         <div class="tab-pane" id="tab-mail">
           <div class="mail-wrap">
             <div class="mail-sidebar">
@@ -1187,11 +1277,17 @@ async function loadProfile() {
 
   if (officer.role === 'admin') {
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+    $('bulletin-add-btn').style.display = '';
   }
 
   showPage('dash');
   loadDashLogs();
   checkNotifications();
+  // Poll for new notifications every 30 seconds while logged in
+  if (window._notifInterval) clearInterval(window._notifInterval);
+  window._notifInterval = setInterval(() => {
+    if (me && officer) checkNotifications();
+  }, 30000);
 }
 
 async function checkNotifications() {
@@ -1225,6 +1321,7 @@ $('logout-btn').addEventListener('click', async () => {
   await db().auth.signOut();
   sessionStorage.removeItem('vs');
   me = null; officer = null;
+  if (window._notifInterval) { clearInterval(window._notifInterval); window._notifInterval = null; }
   $('nav-login').style.display = '';
   $('nav-dash').style.display  = 'none';
   document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
@@ -1253,6 +1350,9 @@ document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
     if (t === 'apps')  loadApps();
     if (t === 'users') loadUsers();
     if (t === 'suspects') loadSuspects();
+    if (t === 'search') { $('global-search-input').focus(); }
+    if (t === 'ops')      loadOps();
+    if (t === 'activity') loadActivity(activityPeriod);
   });
 });
 
@@ -1987,6 +2087,16 @@ async function loadDispatch() {
       tdActions.appendChild(nextSel);
     }
 
+    if (officer?.role === 'admin') {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn danger';
+      delBtn.style.cssText = 'font-size:11px;padding:3px 8px;margin-left:6px';
+      delBtn.textContent = '🗑️';
+      delBtn.title = 'Delete this dispatch call';
+      delBtn.addEventListener('click', () => deleteDispatchCall(d.id));
+      tdActions.appendChild(delBtn);
+    }
+
     tr.appendChild(tdCode); tr.appendChild(tdDetails); tr.appendChild(tdLoc);
     tr.appendChild(tdOfficer); tr.appendChild(tdStatus); tr.appendChild(tdTime); tr.appendChild(tdActions);
     frag.appendChild(tr);
@@ -1998,6 +2108,13 @@ async function loadDispatch() {
 async function updateDispatchStatus(id, status) {
   const { error } = await db().from('dispatch_calls').update({status}).eq('id', id);
   if (error) alert('Error updating status: '+error.message);
+  else loadDispatch();
+}
+
+async function deleteDispatchCall(id) {
+  if (!confirm('Delete this dispatch call? This cannot be undone.')) return;
+  const { error } = await db().from('dispatch_calls').delete().eq('id', id);
+  if (error) alert('Error deleting call: ' + error.message);
   else loadDispatch();
 }
 
@@ -2841,20 +2958,38 @@ if (pfbgEl) {
 }
 
 window.addEventListener('load', () => {
-  // Always load public stats immediately — visible to everyone without login
-  loadPublicStats();
+  const stored = sessionStorage.getItem('vs');
 
-  setTimeout(async () => {
-    const stored = sessionStorage.getItem('vs');
-    if (!stored) return;
-    try {
-      const session = JSON.parse(stored);
-      await db().auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
-      const { data: { user } } = await db().auth.getUser();
-      if (user) { me = user; await loadProfile(); }
-      else sessionStorage.removeItem('vs');
-    } catch(e) { sessionStorage.removeItem('vs'); }
-  }, 1000);
+  if (stored) {
+    // Session exists — hide all pages and show a loading state while we restore,
+    // so there's no flash of the public page before the dashboard appears.
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const loadingEl = document.createElement('div');
+    loadingEl.id = 'session-restoring';
+    loadingEl.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg1);z-index:999;color:var(--ts);font-size:14px;letter-spacing:1px';
+    loadingEl.textContent = 'Restoring session...';
+    document.body.appendChild(loadingEl);
+
+    setTimeout(async () => {
+      try {
+        const session = JSON.parse(stored);
+        await db().auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
+        const { data: { user } } = await db().auth.getUser();
+        if (user) { me = user; await loadProfile(); }
+        else { sessionStorage.removeItem('vs'); showPage('public'); loadPublicStats(); }
+      } catch(e) {
+        sessionStorage.removeItem('vs');
+        showPage('public');
+        loadPublicStats();
+      } finally {
+        const el = $('session-restoring');
+        if (el) el.remove();
+      }
+    }, 300);
+  } else {
+    // No session — show public stats immediately
+    loadPublicStats();
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3142,6 +3277,335 @@ document.addEventListener('keydown', e => {
     closeAppModal();
     document.body.style.overflow = '';
   }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GLOBAL SEARCH
+// ═══════════════════════════════════════════════════════════════════════════
+async function globalSearch(query) {
+  const res = $('search-results');
+  if (!query.trim()) { res.innerHTML = ''; return; }
+  res.innerHTML = '<div style="color:var(--ts);padding:1rem">Searching...</div>';
+  const q = query.trim().toLowerCase();
+
+  const results = await Promise.all([
+    db().from('seizure_logs').select('id,drug,firearm,location,created_at,log_type,drug_detail,firearm_detail,value').or(`drug.ilike.%${q}%,firearm.ilike.%${q}%,location.ilike.%${q}%,notes.ilike.%${q}%`).limit(10),
+    db().from('suspects').select('id,name,affiliations,known_vehicle,notes,mugshot_url').or(`name.ilike.%${q}%,affiliations.ilike.%${q}%,known_vehicle.ilike.%${q}%,notes.ilike.%${q}%`).limit(10),
+    db().from('officers').select('id,name,badge,rank').or(`name.ilike.%${q}%,badge.ilike.%${q}%`).eq('verified',true).limit(10),
+    db().from('dispatch_calls').select('id,code,details,location,officer_name,created_at,status').or(`code.ilike.%${q}%,details.ilike.%${q}%,location.ilike.%${q}%,officer_name.ilike.%${q}%`).limit(10),
+  ]);
+
+  const [logs, suspects, officers, dispatch] = results.map(r => r.data || []);
+  const total = logs.length + suspects.length + officers.length + dispatch.length;
+
+  if (!total) { res.innerHTML = '<div style="color:var(--ts);padding:1rem">No results found for "' + query + '"</div>'; return; }
+
+  let html = '';
+
+  if (logs.length) {
+    html += searchGroup('📋 Seizure Logs', logs.map(l =>
+      `<div style="padding:10px 14px;border-bottom:1px solid var(--border-d);cursor:pointer" onclick="document.querySelector('.sb-btn[data-tab=logs]').click()">
+        <div style="font-weight:600;font-size:13px">#${l.id} — ${l.drug_detail||l.drug||l.firearm_detail||l.firearm||l.log_type||'Log'}</div>
+        <div style="font-size:12px;color:var(--ts)">${l.location} · ${fmtDate(l.created_at)} · ${fmtVal(l.value)}</div>
+      </div>`).join(''));
+  }
+
+  if (suspects.length) {
+    html += searchGroup('🪪 Suspects', suspects.map(s =>
+      `<div style="padding:10px 14px;border-bottom:1px solid var(--border-d);display:flex;gap:10px;align-items:center;cursor:pointer" onclick="document.querySelector('.sb-btn[data-tab=suspects]').click()">
+        ${s.mugshot_url ? `<img src="${s.mugshot_url}" style="width:32px;height:40px;object-fit:cover;border-radius:3px;flex-shrink:0" />` : ''}
+        <div><div style="font-weight:600;font-size:13px">${s.name}</div>
+        <div style="font-size:12px;color:var(--ts)">${[s.affiliations,s.known_vehicle].filter(Boolean).join(' · ')||'No additional info'}</div></div>
+      </div>`).join(''));
+  }
+
+  if (officers.length) {
+    html += searchGroup('👮 Officers', officers.map(o =>
+      `<div style="padding:10px 14px;border-bottom:1px solid var(--border-d)">
+        <div style="font-weight:600;font-size:13px">${o.name} <span style="color:var(--ts);font-weight:400">· ${o.rank||'Officer'}</span></div>
+        <div style="font-size:12px;color:var(--ts)">Badge: ${o.badge}</div>
+      </div>`).join(''));
+  }
+
+  if (dispatch.length) {
+    html += searchGroup('📡 Dispatch', dispatch.map(d =>
+      `<div style="padding:10px 14px;border-bottom:1px solid var(--border-d)">
+        <div style="font-weight:600;font-size:13px">${d.code} — ${d.details||'—'}</div>
+        <div style="font-size:12px;color:var(--ts)">${d.location||'—'} · ${d.officer_name} · ${fmtDate(d.created_at)} · <span class="s-${d.status||'active'}">${d.status||'active'}</span></div>
+      </div>`).join(''));
+  }
+
+  res.innerHTML = `<div style="font-size:12px;color:var(--ts);margin-bottom:8px">${total} result${total>1?'s':''} for "${query}"</div>` + html;
+}
+
+function searchGroup(title, items) {
+  return `<div style="background:var(--bg2);border:1px solid var(--border-d);border-radius:8px;overflow:hidden;margin-bottom:1rem">
+    <div style="padding:8px 14px;background:rgba(201,168,76,.08);font-size:11px;font-weight:700;letter-spacing:1px;color:var(--gold)">${title}</div>
+    ${items.join('')}
+  </div>`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const sBtn = $('global-search-btn');
+  const sInp = $('global-search-input');
+  if (sBtn) sBtn.addEventListener('click', () => globalSearch(sInp.value));
+  if (sInp) sInp.addEventListener('keydown', e => { if (e.key === 'Enter') globalSearch(sInp.value); });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// OPERATIONS (bulletins + mission briefings)
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadOps() {
+  const cont = $('ops-content');
+  cont.innerHTML = '<div style="color:var(--ts)">Loading...</div>';
+
+  const [{ data: bulletins }, { data: briefings }] = await Promise.all([
+    db().from('bulletins').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }),
+    db().from('mission_briefings').select('*').order('created_at', { ascending: false }),
+  ]);
+
+  let html = '';
+
+  // Bulletins
+  if (bulletins?.length) {
+    html += '<div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--gold);margin-bottom:10px">📌 COMMAND BULLETINS</div>';
+    bulletins.forEach(b => {
+      const priColor = b.priority === 'urgent' ? '#f44' : b.priority === 'info' ? '#7ab8ff' : 'var(--gold)';
+      const priLabel = b.priority === 'urgent' ? '🚨 URGENT' : b.priority === 'info' ? 'ℹ INFO' : '📋';
+      html += `<div style="background:var(--bg2);border:1px solid var(--border-d);border-left:3px solid ${priColor};border-radius:8px;padding:1rem 1.2rem;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px">
+            ${b.pinned ? '<span style="color:var(--gold);font-size:11px;font-weight:700">📌 PINNED</span>' : ''}
+            <span style="font-size:11px;color:${priColor};font-weight:700">${priLabel}</span>
+          </div>
+          <div style="font-size:11px;color:var(--ts)">${fmtDate(b.created_at)} · ${b.posted_name||'Command'}</div>
+        </div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:6px">${b.title}</div>
+        <div style="font-size:13px;color:var(--tp);white-space:pre-wrap;line-height:1.6">${b.body}</div>
+        ${officer?.role==='admin' ? `<div style="margin-top:8px;display:flex;gap:6px">
+          <button class="btn" style="font-size:11px;padding:3px 8px" onclick="editBulletin(${b.id})">Edit</button>
+          <button class="btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteBulletin(${b.id})">Delete</button>
+        </div>` : ''}
+      </div>`;
+    });
+  }
+
+  // Mission briefings
+  html += '<div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--gold);margin:1.5rem 0 10px">🗂 MISSION BRIEFINGS</div>';
+  if (briefings?.length) {
+    briefings.forEach(b => {
+      const stColor = b.status==='completed' ? '#6adba0' : b.status==='cancelled' ? '#f44' : 'var(--gold)';
+      const stLabel = b.status==='completed' ? '✅ Completed' : b.status==='cancelled' ? '❌ Cancelled' : '🟡 Active';
+      html += `<div style="background:var(--bg2);border:1px solid var(--border-d);border-radius:8px;padding:1rem 1.2rem;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:4px">
+          <div style="font-weight:700;font-size:15px">${b.title}</div>
+          <span style="font-size:12px;font-weight:600;color:${stColor};border:1px solid ${stColor};padding:2px 10px;border-radius:20px">${stLabel}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:2px">Location</div><div style="font-size:13px">${b.location}</div></div>
+          <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:2px">Officers</div><div style="font-size:13px">${b.officers_inv||'—'}</div></div>
+        </div>
+        <div style="margin-bottom:6px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:2px">Objective</div><div style="font-size:13px;line-height:1.5">${b.objective}</div></div>
+        ${b.outcome ? `<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:2px">Outcome</div><div style="font-size:13px;line-height:1.5">${b.outcome}</div></div>` : ''}
+        <div style="margin-top:8px;font-size:11px;color:var(--ts)">${b.created_by_name||'Officer'} · ${fmtDate(b.created_at)}${b.linked_log_id ? ` · <span style="color:var(--gold)">Log #${b.linked_log_id}</span>` : ''}</div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button class="btn" style="font-size:11px;padding:3px 8px" onclick="editBriefing(${b.id})">Edit</button>
+          ${officer?.role==='admin' ? `<button class="btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteBriefing(${b.id})">Delete</button>` : ''}
+        </div>
+      </div>`;
+    });
+  } else {
+    html += '<div style="color:var(--ts);font-size:13px">No mission briefings yet.</div>';
+  }
+
+  cont.innerHTML = html;
+}
+
+// Bulletin CRUD
+document.addEventListener('DOMContentLoaded', () => {
+  const bulletinAddBtn = $('bulletin-add-btn');
+  if (bulletinAddBtn) bulletinAddBtn.addEventListener('click', () => {
+    $('bulletin-edit-id').value = '';
+    $('bulletin-title').value = '';
+    $('bulletin-body').value = '';
+    $('bulletin-priority').value = 'normal';
+    $('bulletin-pinned').checked = false;
+    $('bulletin-form-wrap').style.display = 'block';
+  });
+  const bulletinCancelBtn = $('bulletin-cancel-btn');
+  if (bulletinCancelBtn) bulletinCancelBtn.addEventListener('click', () => { $('bulletin-form-wrap').style.display = 'none'; });
+  const bulletinSaveBtn = $('bulletin-save-btn');
+  if (bulletinSaveBtn) bulletinSaveBtn.addEventListener('click', async () => {
+    const title = $('bulletin-title').value.trim();
+    const body  = $('bulletin-body').value.trim();
+    if (!title || !body) { $('bulletin-msg').textContent = 'Title and body required.'; return; }
+    const payload = { title, body, priority: $('bulletin-priority').value, pinned: $('bulletin-pinned').checked, posted_by: me?.id, posted_name: officer?.name };
+    const editId = $('bulletin-edit-id').value;
+    const { error } = editId
+      ? await db().from('bulletins').update(payload).eq('id', editId)
+      : await db().from('bulletins').insert(payload);
+    if (error) { $('bulletin-msg').textContent = 'Error: ' + error.message; return; }
+    $('bulletin-form-wrap').style.display = 'none';
+    loadOps();
+  });
+
+  // Briefing CRUD
+  const briefingAddBtn = $('briefing-add-btn');
+  if (briefingAddBtn) briefingAddBtn.addEventListener('click', () => {
+    $('briefing-form-title').textContent = 'New Mission Briefing';
+    $('briefing-edit-id').value = '';
+    ['briefing-title','briefing-location','briefing-objective','briefing-officers','briefing-outcome'].forEach(id => $(id).value = '');
+    $('briefing-log-id').value = '';
+    $('briefing-status').value = 'active';
+    $('briefing-form-wrap').style.display = 'block';
+  });
+  const briefingCancelBtn = $('briefing-cancel-btn');
+  if (briefingCancelBtn) briefingCancelBtn.addEventListener('click', () => { $('briefing-form-wrap').style.display = 'none'; });
+  const briefingSaveBtn = $('briefing-save-btn');
+  if (briefingSaveBtn) briefingSaveBtn.addEventListener('click', async () => {
+    const title     = $('briefing-title').value.trim();
+    const objective = $('briefing-objective').value.trim();
+    const location  = $('briefing-location').value.trim();
+    if (!title || !objective || !location) { $('briefing-msg').textContent = 'Title, objective and location required.'; return; }
+    const logId = parseInt($('briefing-log-id').value) || null;
+    const payload = { title, objective, location, officers_inv: $('briefing-officers').value.trim()||null, outcome: $('briefing-outcome').value.trim()||null, linked_log_id: logId, status: $('briefing-status').value, created_by: me?.id, created_by_name: officer?.name };
+    const editId = $('briefing-edit-id').value;
+    const { error } = editId
+      ? await db().from('mission_briefings').update(payload).eq('id', editId)
+      : await db().from('mission_briefings').insert(payload);
+    if (error) { $('briefing-msg').textContent = 'Error: ' + error.message; return; }
+    $('briefing-form-wrap').style.display = 'none';
+    loadOps();
+  });
+});
+
+async function editBulletin(id) {
+  const { data: b } = await db().from('bulletins').select('*').eq('id', id).single();
+  if (!b) return;
+  $('bulletin-edit-id').value = b.id;
+  $('bulletin-title').value = b.title;
+  $('bulletin-body').value = b.body;
+  $('bulletin-priority').value = b.priority;
+  $('bulletin-pinned').checked = b.pinned;
+  $('bulletin-form-wrap').style.display = 'block';
+}
+async function deleteBulletin(id) {
+  if (!confirm('Delete this bulletin?')) return;
+  await db().from('bulletins').delete().eq('id', id);
+  loadOps();
+}
+async function editBriefing(id) {
+  const { data: b } = await db().from('mission_briefings').select('*').eq('id', id).single();
+  if (!b) return;
+  $('briefing-form-title').textContent = 'Edit Mission Briefing';
+  $('briefing-edit-id').value = b.id;
+  $('briefing-title').value = b.title;
+  $('briefing-location').value = b.location;
+  $('briefing-objective').value = b.objective;
+  $('briefing-officers').value = b.officers_inv||'';
+  $('briefing-outcome').value = b.outcome||'';
+  $('briefing-log-id').value = b.linked_log_id||'';
+  $('briefing-status').value = b.status;
+  $('briefing-form-wrap').style.display = 'block';
+}
+async function deleteBriefing(id) {
+  if (!confirm('Delete this briefing?')) return;
+  await db().from('mission_briefings').delete().eq('id', id);
+  loadOps();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ACTIVITY TRACKER
+// ═══════════════════════════════════════════════════════════════════════════
+let activityPeriod = 7;
+
+async function loadActivity(days) {
+  activityPeriod = days;
+  const tbl = $('activity-table');
+  tbl.innerHTML = '<div style="color:var(--ts)">Loading...</div>';
+
+  // Build date filter
+  let since = null;
+  if (days !== 'all') {
+    const d = new Date();
+    d.setDate(d.getDate() - Number(days));
+    since = d.toISOString();
+  }
+
+  // Fetch officers
+  const { data: offs } = await db().from('officers').select('id,name,badge,rank').eq('verified', true);
+  if (!offs?.length) { tbl.innerHTML = '<div style="color:var(--ts)">No officers found.</div>'; return; }
+
+  // Fetch logs and dispatch in the period
+  let logsQ = db().from('seizure_logs').select('officer_id,arrests,created_at');
+  let dispQ = db().from('dispatch_calls').select('officer_id,created_at');
+  if (since) { logsQ = logsQ.gte('created_at', since); dispQ = dispQ.gte('created_at', since); }
+
+  const [{ data: logs }, { data: disp }] = await Promise.all([logsQ, dispQ]);
+
+  // Aggregate per officer
+  const stats = {};
+  offs.forEach(o => { stats[o.id] = { officer: o, logs: 0, arrests: 0, dispatch: 0, lastActive: null }; });
+  (logs||[]).forEach(l => {
+    if (!stats[l.officer_id]) return;
+    stats[l.officer_id].logs++;
+    stats[l.officer_id].arrests += Number(l.arrests)||0;
+    const d = l.created_at;
+    if (!stats[l.officer_id].lastActive || d > stats[l.officer_id].lastActive) stats[l.officer_id].lastActive = d;
+  });
+  (disp||[]).forEach(d => {
+    if (!stats[d.officer_id]) return;
+    stats[d.officer_id].dispatch++;
+    if (!stats[d.officer_id].lastActive || d.created_at > stats[d.officer_id].lastActive) stats[d.officer_id].lastActive = d.created_at;
+  });
+
+  // Sort by logs desc
+  const sorted = Object.values(stats).sort((a,b) => (b.logs+b.dispatch) - (a.logs+a.dispatch));
+
+  const periodLabel = days === 'all' ? 'All time' : `Last ${days} days`;
+
+  tbl.innerHTML = `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border-d);color:var(--ts);font-size:11px;text-transform:uppercase;letter-spacing:1px">
+            <th style="padding:8px 12px;text-align:left">Officer</th>
+            <th style="padding:8px 12px;text-align:left">Rank</th>
+            <th style="padding:8px 12px;text-align:center">Seizure Logs</th>
+            <th style="padding:8px 12px;text-align:center">Arrests</th>
+            <th style="padding:8px 12px;text-align:center">Dispatch Calls</th>
+            <th style="padding:8px 12px;text-align:left">Last Active</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.map((s,i) => {
+            const active = s.logs > 0 || s.dispatch > 0;
+            return `<tr style="border-bottom:1px solid var(--border-d);${!active ? 'opacity:.5' : ''}">
+              <td style="padding:10px 12px;font-weight:600">${s.officer.name}<div style="font-size:11px;color:var(--ts);font-weight:400">${s.officer.badge}</div></td>
+              <td style="padding:10px 12px;color:var(--ts)">${s.officer.rank||'Officer'}</td>
+              <td style="padding:10px 12px;text-align:center"><span style="color:var(--gold);font-weight:700">${s.logs}</span></td>
+              <td style="padding:10px 12px;text-align:center"><span style="color:#f55;font-weight:700">${s.arrests}</span></td>
+              <td style="padding:10px 12px;text-align:center"><span style="color:#7ab8ff;font-weight:700">${s.dispatch}</span></td>
+              <td style="padding:10px 12px;color:var(--ts)">${s.lastActive ? fmtDate(s.lastActive) : '<span style="color:#f44">No activity</span>'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:var(--ts);margin-top:8px;text-align:right">${periodLabel} · ${sorted.length} officers</div>`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  ['7','30','all'].forEach(p => {
+    const btn = $(`act-${p}`);
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-activity-period]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadActivity(p === 'all' ? 'all' : parseInt(p));
+    });
+  });
 });
 
 </script>
