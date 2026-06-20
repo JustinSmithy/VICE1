@@ -580,6 +580,7 @@ textarea.fi{resize:vertical;min-height:80px}
                 <option value="drug">Narcotics</option>
                 <option value="firearm">Firearms</option>
                 <option value="both">Narcotics &amp; Firearms</option>
+                <option value="arrest">Arrest Only (No Seizure)</option>
               </select>
             </div>
             <div id="drug-group" style="display:none">
@@ -1704,7 +1705,8 @@ async function submitLog() {
   const op_type  = $('log-optype').value;
   const notes    = $('log-notes').value.trim();
   if (!type)           return showMsg('add-log-msg','Please select a seizure type.','err');
-  if (!value||!location) return showMsg('add-log-msg','Street value and location are required.','err');
+  if (type !== 'arrest' && (!value||!location)) return showMsg('add-log-msg','Street value and location are required.','err');
+  if (type === 'arrest' && !location) return showMsg('add-log-msg','Location is required.','err');
 
   const drugs = [];
   $('drug-rows').querySelectorAll('.item-row').forEach(r => {
