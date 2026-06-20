@@ -852,9 +852,14 @@ textarea.fi{resize:vertical;min-height:80px}
             <input type="hidden" id="suspect-edit-id" />
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
               <div><label class="flbl">Full Name *</label><input class="fi" id="suspect-name" placeholder="e.g. Marcus Webb" /></div>
-              <div><label class="flbl">Mugshot (image)</label><input type="file" id="suspect-photo" accept="image/*" class="fi" /></div>
+              <div><label class="flbl">Date of Birth</label><input class="fi" id="suspect-dob" placeholder="e.g. 12 Mar 1990" /></div>
             </div>
-            <div style="margin-bottom:1rem"><label class="flbl">Notes / Known Info</label><textarea class="fi" id="suspect-notes" rows="2" placeholder="Known aliases, vehicle, area of operation..."></textarea></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+              <div><label class="flbl">Affiliations / Gang</label><input class="fi" id="suspect-affiliations" placeholder="e.g. Ballas, Los Santos Vagos" /></div>
+              <div><label class="flbl">Known Vehicle(s)</label><input class="fi" id="suspect-vehicle" placeholder="e.g. Red Sultan, Blue Sultan" /></div>
+            </div>
+            <div style="margin-bottom:1rem"><label class="flbl">Notes / Known Info</label><textarea class="fi" id="suspect-notes" rows="2" placeholder="Known aliases, area of operation, physical description..."></textarea></div>
+            <div style="margin-bottom:1rem"><label class="flbl">Mugshot (image)</label><input type="file" id="suspect-photo" accept="image/*" class="fi" /></div>
             <div id="suspect-form-msg" style="margin-bottom:8px;font-size:13px;color:var(--gold)"></div>
             <div style="display:flex;gap:8px">
               <button class="btn primary" id="suspect-save-btn">Save</button>
@@ -1269,7 +1274,18 @@ async function loadPublicStats() {
   $('pub-ops').textContent    = logs.length;
   $('pub-rate').textContent   = logs.length&&totalArr ? Math.round((totalArr/logs.length)*100)+'%' : 'N/A';
 
-  const { data: recent } = await db().from('seizure_logs').select('drug,firearm,qty,unit,value,arrests,location,created_at,log_type,drug_detail,firearm_detail').order('created_at',{ascending:false}).limit(20);
+  const { data: recent } = await db().from('seizure_logs').select('id,drug,firearm,qty,unit,value,arrests,location,created_at,log_type,drug_detail,firearm_detail').order('created_at',{ascending:false}).limit(20);
+  // Check which logs have high-risk arrestees (6 charges)
+  const recentIds = (recent||[]).map(l=>l.id);
+  let highRiskLogIds = new Set();
+  if (recentIds.length) {
+    try {
+      const { data: arrs } = await db().from('log_arrestees').select('log_id,charges').in('log_id', recentIds);
+      (arrs||[]).forEach(a => {
+        if (a.charges && a.charges.split(',').filter(Boolean).length >= 6) highRiskLogIds.add(a.log_id);
+      });
+    } catch(e) {}
+  }
   const tbody = $('pub-table');
   if (!tbody) return;
   if (!recent?.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">No records yet.</td></tr>'; return; }
@@ -1287,7 +1303,12 @@ async function loadPublicStats() {
     if (l.firearm_detail) itemParts.push(l.firearm_detail);
     else if (l.firearm) itemParts.push(l.firearm);
     const itemDisplay = itemParts.join(' · ') || '—';
-    tr.innerHTML = `<td>${fmtDate(l.created_at)}</td><td><span class="badge ${typeCls}">${typeLabel}</span></td><td>${itemDisplay}</td><td class="td-val">${fmtVal(l.value)}</td><td>${l.location}</td><td><span class="badge ${l.arrests>0?'bg-green':'bg-blue'}">${l.arrests>0?l.arrests+' arrested':'Processing'}</span></td>`;
+        const isHighRiskLog = highRiskLogIds.has(l.id);
+    const arrestLabel = l.arrests > 0
+      ? (isHighRiskLog ? `⚠ ${l.arrests} High Risk Arrest${l.arrests>1?'s':''}` : `${l.arrests} Arrested`)
+      : 'Processing';
+    const arrestCls = l.arrests > 0 ? (isHighRiskLog ? 'bg-red' : 'bg-green') : 'bg-blue';
+    tr.innerHTML = `<td>${fmtDate(l.created_at)}</td><td><span class="badge ${typeCls}">${typeLabel}</span></td><td>${itemDisplay}</td><td class="td-val">${fmtVal(l.value)}</td><td>${l.location}</td><td><span class="badge ${arrestCls}">${arrestLabel}</span></td>`;
     rows.appendChild(tr);
   });
   tbody.innerHTML = '';
@@ -1466,6 +1487,11 @@ function openLogModal(l, arrestees) {
         + '<div style="flex:1"><div style="font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">' + (a.name||'Unknown') + mHighRisk + '</div>'
         + '<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ' + (a.charges||'—') + '</div>'
         + (a.evidence?'<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> '+(a.evidence.startsWith('http')?'<a href="'+a.evidence+'" target="_blank" style="color:var(--gold)">View</a>':a.evidence)+'</div>':'')
+        + '<div style="margin-top:8px">'
+        + (a.suspect_id
+          ? '<label style="font-size:11px;color:var(--ts);cursor:pointer;display:inline-flex;align-items:center;gap:4px">📷 Update mugshot: <input type="file" accept="image/*" style="font-size:11px" data-sid="'+a.suspect_id+'" onchange="updateSuspectMugshot(this,this.dataset.sid)" /></label>'
+          : '<label style="font-size:11px;color:var(--ts);cursor:pointer;display:inline-flex;align-items:center;gap:4px">📷 Add mugshot: <input type="file" accept="image/*" style="font-size:11px" data-name="'+encodeURIComponent(a.name||'')+'" onchange="uploadMugshotForName(this,decodeURIComponent(this.dataset.name))" /></label>')
+        + '</div>'
         + '</div></div>';
       arDiv.appendChild(ad);
     });
@@ -2861,7 +2887,10 @@ function renderSuspectsGrid(suspects) {
         + '</div>'
         + '<div style="padding:10px 12px">'
         + '<div style="font-weight:700;font-size:14px;margin-bottom:3px">' + (s.name || 'Unknown') + '</div>'
-        + (s.notes ? '<div style="font-size:11px;color:var(--ts);line-height:1.4">' + s.notes + '</div>' : '')
+        + (s.affiliations ? '<div style="font-size:11px;color:var(--gold);margin-bottom:2px;font-weight:600">' + s.affiliations + '</div>' : '')
+        + (s.known_vehicle ? '<div style="font-size:11px;color:var(--ts)">🚗 ' + s.known_vehicle + '</div>' : '')
+        + (s.dob ? '<div style="font-size:11px;color:var(--ts)">DOB: ' + s.dob + '</div>' : '')
+        + (s.notes ? '<div style="font-size:11px;color:var(--ts);line-height:1.4;margin-top:3px">' + s.notes + '</div>' : '')
         + '<div style="margin-top:8px;display:flex;gap:6px">'
         + '<button class="btn" style="font-size:11px;padding:3px 8px" data-sid="'+s.id+'" onclick="event.stopPropagation();openSuspectEditById(this.dataset.sid)">Edit</button>'
         + ((officer&&officer.role==='admin') ? '<button class="btn danger" style="font-size:11px;padding:3px 8px" data-sid="'+s.id+'" onclick="event.stopPropagation();deleteSuspect(this.dataset.sid)">Delete</button>' : '')
@@ -2879,6 +2908,9 @@ function openSuspectEdit(s) {
   $('suspect-form-title').textContent = 'Edit Suspect';
   $('suspect-edit-id').value = s.id;
   $('suspect-name').value = s.name || '';
+  $('suspect-dob').value = s.dob || '';
+  $('suspect-affiliations').value = s.affiliations || '';
+  $('suspect-vehicle').value = s.known_vehicle || '';
   $('suspect-notes').value = s.notes || '';
   $('suspect-photo').value = '';
   $('suspect-form-msg').textContent = s.mugshot_url ? '📷 Mugshot on file. Upload a new one to replace it.' : '';
@@ -2904,6 +2936,9 @@ document.addEventListener('DOMContentLoaded', () => {
     $('suspect-form-title').textContent = 'Add Suspect';
     $('suspect-edit-id').value = '';
     $('suspect-name').value = '';
+    $('suspect-dob').value = '';
+    $('suspect-affiliations').value = '';
+    $('suspect-vehicle').value = '';
     $('suspect-notes').value = '';
     $('suspect-photo').value = '';
     $('suspect-form-msg').textContent = '';
@@ -2918,7 +2953,10 @@ document.addEventListener('DOMContentLoaded', () => {
   $('suspect-save-btn').addEventListener('click', async () => {
     const name = $('suspect-name').value.trim();
     if (!name) { $('suspect-form-msg').textContent = 'Name is required.'; return; }
-    const notes = $('suspect-notes').value.trim();
+    const notes        = $('suspect-notes').value.trim();
+    const dob          = $('suspect-dob').value.trim();
+    const affiliations = $('suspect-affiliations').value.trim();
+    const known_vehicle = $('suspect-vehicle').value.trim();
     const file  = $('suspect-photo').files[0];
     const editId = $('suspect-edit-id').value;
     $('suspect-form-msg').textContent = 'Saving...';
@@ -2937,7 +2975,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (editId) {
       // Update existing
-      const payload = { name, notes };
+      const payload = { name, notes, dob: dob||null, affiliations: affiliations||null, known_vehicle: known_vehicle||null };
       if (mugshot_url) payload.mugshot_url = mugshot_url;
       const { error } = await db().from('suspects').update(payload).eq('id', editId);
       if (error) { $('suspect-form-msg').textContent = 'Error: ' + error.message; return; }
@@ -2954,7 +2992,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (error) { $('suspect-form-msg').textContent = 'Error: ' + error.message; return; }
       } else {
         // Insert new suspect
-        const { error } = await db().from('suspects').insert({ name, notes, mugshot_url });
+        const { error } = await db().from('suspects').insert({ name, notes, dob: dob||null, affiliations: affiliations||null, known_vehicle: known_vehicle||null, mugshot_url });
         if (error) { $('suspect-form-msg').textContent = 'Error: ' + error.message; return; }
       }
     }
@@ -2976,6 +3014,43 @@ async function linkArresteesToSuspects(logId, arresteeNames) {
         .ilike('name', name.trim());
     }
   }
+}
+
+
+async function updateSuspectMugshot(input, suspectId) {
+  const file = input.files[0];
+  if (!file) return;
+  const label = input.closest('label');
+  if (label) label.textContent = 'Uploading...';
+  const ext  = file.name.split('.').pop();
+  const path = 'suspects/update-' + suspectId + '-' + Date.now() + '.' + ext;
+  const { error: upErr } = await db().storage.from('mugshots').upload(path, file, { upsert: true });
+  if (upErr) { if (label) label.textContent = '❌ Upload failed'; return; }
+  const { data: urlData } = db().storage.from('mugshots').getPublicUrl(path);
+  const { error: dbErr } = await db().from('suspects').update({ mugshot_url: urlData.publicUrl }).eq('id', suspectId);
+  if (dbErr) { if (label) label.textContent = '❌ Save failed'; return; }
+  if (label) label.textContent = '✓ Mugshot updated — reload to see it';
+  _suspectsCache = null;
+}
+
+async function uploadMugshotForName(input, name) {
+  const file = input.files[0];
+  if (!file || !name) return;
+  const label = input.closest('label');
+  if (label) label.textContent = 'Uploading...';
+  const ext  = file.name.split('.').pop();
+  const path = 'suspects/' + name.toLowerCase().replace(/\s+/g,'-') + '-' + Date.now() + '.' + ext;
+  const { error: upErr } = await db().storage.from('mugshots').upload(path, file, { upsert: true });
+  if (upErr) { if (label) label.textContent = '❌ Upload failed'; return; }
+  const { data: urlData } = db().storage.from('mugshots').getPublicUrl(path);
+  const { data: existing } = await db().from('suspects').select('id').ilike('name', name).maybeSingle();
+  if (existing) {
+    await db().from('suspects').update({ mugshot_url: urlData.publicUrl }).eq('id', existing.id);
+  } else {
+    await db().from('suspects').insert({ name, mugshot_url: urlData.publicUrl });
+  }
+  if (label) label.textContent = '✓ Mugshot saved — reload to see it';
+  _suspectsCache = null;
 }
 
 </script>
