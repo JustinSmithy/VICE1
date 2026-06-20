@@ -1316,8 +1316,10 @@ async function loadDashLogs() {
     const suspectIds = [...new Set((arr||[]).filter(a=>a.suspect_id).map(a=>a.suspect_id))];
     let suspectMugshots = {};
     if (suspectIds.length) {
-      const { data: susp } = await db().from('suspects').select('id,mugshot_url').in('id', suspectIds);
-      (susp||[]).forEach(s => { if (s.mugshot_url) suspectMugshots[s.id] = s.mugshot_url; });
+      try {
+        const { data: susp } = await db().from('suspects').select('id,mugshot_url').in('id', suspectIds);
+        (susp||[]).forEach(s => { if (s.mugshot_url) suspectMugshots[s.id] = s.mugshot_url; });
+      } catch(e) { /* suspects table may not exist yet — mugshots won't show but logs still load */ }
     }
     (arr||[]).forEach(a => { if(!arrMap[a.log_id]) arrMap[a.log_id]=[]; arrMap[a.log_id].push(a); });
   }
@@ -1406,10 +1408,12 @@ async function loadDashLogs() {
 async function fetchSuspectMugshotsForArrestees(arrestees) {
   const ids = [...new Set(arrestees.filter(a=>a.suspect_id).map(a=>a.suspect_id))];
   if (!ids.length) return {};
-  const { data } = await db().from('suspects').select('id,mugshot_url').in('id', ids);
-  const map = {};
-  (data||[]).forEach(s => { if (s.mugshot_url) map[s.id] = s.mugshot_url; });
-  return map;
+  try {
+    const { data } = await db().from('suspects').select('id,mugshot_url').in('id', ids);
+    const map = {};
+    (data||[]).forEach(s => { if (s.mugshot_url) map[s.id] = s.mugshot_url; });
+    return map;
+  } catch(e) { return {}; }
 }
 
 function openLogModal(l, arrestees) {
@@ -1611,17 +1615,26 @@ function addArresteeRow() {
   ni.addEventListener('blur', async () => {
     const name = ni.value.trim();
     if (!name) return;
-    const { data: s } = await db().from('suspects').select('id,mugshot_url,notes').ilike('name', name).maybeSingle();
-    if (s?.mugshot_url) {
-      mpreview.style.display = 'flex';
-      mpreview.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 8px;background:rgba(201,168,76,.08);border:1px solid var(--border-d);border-radius:6px;font-size:12px';
-      mpreview.innerHTML = '<img src="'+s.mugshot_url+'" style="width:36px;height:45px;object-fit:cover;border-radius:3px;border:1px solid var(--border-d)" />'
-        + '<div><div style="color:var(--gold);font-weight:600">Suspect on record</div>'
-        + (s.notes ? '<div style="color:var(--ts)">'+s.notes+'</div>' : '')
-        + '<div style="color:var(--ts);margin-top:2px">Upload a new photo below to update their mugshot.</div></div>';
-      row.dataset.suspectId = s.id;
-    } else {
-      mpreview.style.display = 'none';
+    try {
+      const { data: s } = await db().from('suspects').select('id,mugshot_url,notes').ilike('name', name).maybeSingle();
+      if (s) {
+        row.dataset.suspectId = s.id;
+        row.dataset.existingMugshot = s.mugshot_url || '';
+        mpreview.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 8px;background:rgba(201,168,76,.08);border:1px solid var(--border-d);border-radius:6px;font-size:12px';
+        mpreview.innerHTML = (s.mugshot_url
+          ? '<img src="'+s.mugshot_url+'" style="width:36px;height:45px;object-fit:cover;border-radius:3px;border:1px solid var(--border-d)" />'
+          : '<div style="width:36px;height:45px;background:rgba(255,255,255,.05);border-radius:3px;border:1px solid var(--border-d);display:flex;align-items:center;justify-content:center;font-size:18px">🪪</div>')
+          + '<div><div style="color:var(--gold);font-weight:600">Suspect on record'+(s.mugshot_url?' — mugshot assigned automatically':'')+'</div>'
+          + (s.notes ? '<div style="color:var(--ts)">'+s.notes+'</div>' : '')
+          + '<div style="color:var(--ts);margin-top:2px">'+(s.mugshot_url?'Existing mugshot will be used. Upload a new one below to replace it.':'No mugshot yet — upload one below.')+'</div></div>';
+      } else {
+        row.dataset.suspectId = '';
+        row.dataset.existingMugshot = '';
+        mpreview.style.cssText = 'display:none';
+        mpreview.innerHTML = '';
+      }
+    } catch(e) {
+      // suspects table may not exist yet
       row.dataset.suspectId = '';
     }
   });
@@ -1712,7 +1725,8 @@ async function submitLog() {
     if (!name||!ev||!charges.length) return showMsg('add-log-msg','Complete all fields for each arrested person.','err');
     const mugFile = row.querySelector('.arr-mugshot')?.files[0] || null;
     const suspectId = row.dataset.suspectId || null;
-    arrestees.push({name, evidence:ev, charges:charges.join(', '), _mugFile: mugFile, _suspectId: suspectId});
+    const existingMugshot = row.dataset.existingMugshot || null;
+    arrestees.push({name, evidence:ev, charges:charges.join(', '), _mugFile: mugFile, _suspectId: suspectId, _existingMugshot: existingMugshot});
   }
 
   const btn = $('log-submit');
@@ -1740,12 +1754,14 @@ async function submitLog() {
   if (arrestees.length && newLog?.id) {
     // Upload mugshots and upsert suspect records before inserting log_arrestees
     const enriched = await Promise.all(arrestees.map(async a => {
-      const { _mugFile, _suspectId, ...base } = a;
+      const { _mugFile, _suspectId, _existingMugshot, ...base } = a;
       let suspectId = _suspectId || null;
       let mugshotUrl = null;
 
-      // Upload mugshot if provided
+      // Use existing mugshot if no new file uploaded
+      const existingMugshot = _existingMugshot || null;
       if (_mugFile) {
+        // New file uploaded — replace existing
         const ext  = _mugFile.name.split('.').pop();
         const path = 'suspects/' + base.name.toLowerCase().replace(/\s+/g,'-') + '-' + Date.now() + '.' + ext;
         const { error: upErr } = await db().storage.from('mugshots').upload(path, _mugFile, { upsert: true });
@@ -1753,6 +1769,9 @@ async function submitLog() {
           const { data: urlData } = db().storage.from('mugshots').getPublicUrl(path);
           mugshotUrl = urlData.publicUrl;
         }
+      } else if (existingMugshot) {
+        // No new upload — keep existing mugshot URL
+        mugshotUrl = existingMugshot;
       }
 
       // Upsert suspect record
