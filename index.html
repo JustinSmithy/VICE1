@@ -850,9 +850,8 @@ textarea.fi{resize:vertical;min-height:80px}
           <div id="suspect-form-wrap" style="display:none;background:var(--bg2);border:1px solid var(--border-d);border-radius:10px;padding:1.5rem;margin-bottom:1.5rem">
             <h3 style="margin:0 0 1rem" id="suspect-form-title">Add Suspect</h3>
             <input type="hidden" id="suspect-edit-id" />
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-              <div><label class="flbl">Full Name *</label><input class="fi" id="suspect-name" placeholder="e.g. Marcus Webb" /></div>
-              <div><label class="flbl">Date of Birth</label><input class="fi" id="suspect-dob" placeholder="e.g. 12 Mar 1990" /></div>
+            <div style="margin-bottom:1rem">
+              <label class="flbl">Full Name *</label><input class="fi" id="suspect-name" placeholder="e.g. Marcus Webb" />
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
               <div><label class="flbl">Affiliations / Gang</label><input class="fi" id="suspect-affiliations" placeholder="e.g. Ballas, Los Santos Vagos" /></div>
@@ -2889,7 +2888,6 @@ function renderSuspectsGrid(suspects) {
         + '<div style="font-weight:700;font-size:14px;margin-bottom:3px">' + (s.name || 'Unknown') + '</div>'
         + (s.affiliations ? '<div style="font-size:11px;color:var(--gold);margin-bottom:2px;font-weight:600">' + s.affiliations + '</div>' : '')
         + (s.known_vehicle ? '<div style="font-size:11px;color:var(--ts)">🚗 ' + s.known_vehicle + '</div>' : '')
-        + (s.dob ? '<div style="font-size:11px;color:var(--ts)">DOB: ' + s.dob + '</div>' : '')
         + (s.notes ? '<div style="font-size:11px;color:var(--ts);line-height:1.4;margin-top:3px">' + s.notes + '</div>' : '')
         + '<div style="margin-top:8px;display:flex;gap:6px">'
         + '<button class="btn" style="font-size:11px;padding:3px 8px" data-sid="'+s.id+'" onclick="event.stopPropagation();openSuspectEditById(this.dataset.sid)">Edit</button>'
@@ -2908,7 +2906,6 @@ function openSuspectEdit(s) {
   $('suspect-form-title').textContent = 'Edit Suspect';
   $('suspect-edit-id').value = s.id;
   $('suspect-name').value = s.name || '';
-  $('suspect-dob').value = s.dob || '';
   $('suspect-affiliations').value = s.affiliations || '';
   $('suspect-vehicle').value = s.known_vehicle || '';
   $('suspect-notes').value = s.notes || '';
@@ -2936,7 +2933,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('suspect-form-title').textContent = 'Add Suspect';
     $('suspect-edit-id').value = '';
     $('suspect-name').value = '';
-    $('suspect-dob').value = '';
     $('suspect-affiliations').value = '';
     $('suspect-vehicle').value = '';
     $('suspect-notes').value = '';
@@ -2954,7 +2950,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = $('suspect-name').value.trim();
     if (!name) { $('suspect-form-msg').textContent = 'Name is required.'; return; }
     const notes        = $('suspect-notes').value.trim();
-    const dob          = $('suspect-dob').value.trim();
     const affiliations = $('suspect-affiliations').value.trim();
     const known_vehicle = $('suspect-vehicle').value.trim();
     const file  = $('suspect-photo').files[0];
@@ -2975,7 +2970,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (editId) {
       // Update existing
-      const payload = { name, notes, dob: dob||null, affiliations: affiliations||null, known_vehicle: known_vehicle||null };
+      const payload = { name, notes, affiliations: affiliations||null, known_vehicle: known_vehicle||null };
       if (mugshot_url) payload.mugshot_url = mugshot_url;
       const { error } = await db().from('suspects').update(payload).eq('id', editId);
       if (error) { $('suspect-form-msg').textContent = 'Error: ' + error.message; return; }
@@ -2992,7 +2987,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (error) { $('suspect-form-msg').textContent = 'Error: ' + error.message; return; }
       } else {
         // Insert new suspect
-        const { error } = await db().from('suspects').insert({ name, notes, dob: dob||null, affiliations: affiliations||null, known_vehicle: known_vehicle||null, mugshot_url });
+        const { error } = await db().from('suspects').insert({ name, notes, affiliations: affiliations||null, known_vehicle: known_vehicle||null, mugshot_url });
         if (error) { $('suspect-form-msg').textContent = 'Error: ' + error.message; return; }
       }
     }
