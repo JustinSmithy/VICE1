@@ -424,8 +424,8 @@ textarea.fi{resize:vertical;min-height:80px}
 <div class="page" id="pg-handbook">
   <div style="max-width:860px;margin:0 auto;padding:3rem 2rem 5rem">
     <div style="text-align:center;padding:3rem 0 2.5rem;border-bottom:1px solid var(--border-d);margin-bottom:3rem">
-      <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:1rem">Los Santos Police Department</div>
-      <div style="font-size:48px;margin-bottom:1rem">🛡️</div>
+      <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem">Los Santos Police Department</div>
+      <img src="./vice-unit-logo.jpg" alt="LSPD VICE Division" style="width:200px;height:200px;object-fit:contain;margin-bottom:1.2rem;display:block;margin-left:auto;margin-right:auto" />
       <h1 style="font-size:2.2rem;font-weight:800;margin-bottom:.5rem">Vice Unit</h1>
       <div style="font-size:14px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:1.5rem">Drug Enforcement Division — Official Handbook</div>
       <div style="display:inline-block;background:rgba(201,168,76,.08);border:1px solid var(--border);border-radius:6px;padding:8px 20px;font-size:12px;color:var(--ts)">🔒 Law Enforcement Sensitive — Official Use Only</div>
@@ -651,7 +651,7 @@ textarea.fi{resize:vertical;min-height:80px}
           </div>
           <div class="apps-filter" style="margin-bottom:1.25rem">
             <button class="af-btn active" data-dfilter="active">Active Calls</button>
-            <button class="af-btn" data-dfilter="all">History</button>
+            <button class="af-btn" data-dfilter="history">History</button>
           </div>
           <div class="tbl-wrap">
             <div class="tbl-head"><h3>Dispatch Log</h3><span class="badge bg-gold" id="dispatch-count">0 Active</span></div>
@@ -1277,11 +1277,43 @@ async function loadProfile() {
   showPage('dash');
   loadHomeWidget();
   checkNotifications();
-  // Poll for new notifications every 30 seconds while logged in
+  // Poll every 30 seconds as a fallback
   if (window._notifInterval) clearInterval(window._notifInterval);
   window._notifInterval = setInterval(() => {
     if (me && officer) checkNotifications();
   }, 30000);
+
+  // ── Real-time subscriptions for instant notifications ──────────────────
+  // Unsubscribe any existing channels first
+  if (window._realtimeChannels) {
+    window._realtimeChannels.forEach(c => db().removeChannel(c));
+  }
+  window._realtimeChannels = [];
+
+  // New messages addressed to this officer → instant mail badge update
+  const msgChannel = db()
+    .channel('realtime-messages-' + me.id)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: 'to_id=eq.' + me.id,
+    }, () => { checkNotifications(); })
+    .subscribe();
+  window._realtimeChannels.push(msgChannel);
+
+  // New applications (admin only) → instant apps badge update
+  if (officer.role === 'admin') {
+    const appChannel = db()
+      .channel('realtime-applications')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'applications',
+      }, () => { checkNotifications(); })
+      .subscribe();
+    window._realtimeChannels.push(appChannel);
+  }
 }
 
 async function checkNotifications() {
@@ -1316,6 +1348,10 @@ $('logout-btn').addEventListener('click', async () => {
   sessionStorage.removeItem('vs');
   me = null; officer = null;
   if (window._notifInterval) { clearInterval(window._notifInterval); window._notifInterval = null; }
+  if (window._realtimeChannels) {
+    window._realtimeChannels.forEach(c => db().removeChannel(c));
+    window._realtimeChannels = [];
+  }
   $('nav-login').style.display = '';
   $('nav-dash').style.display  = 'none';
   document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
@@ -2034,6 +2070,7 @@ async function loadDispatch() {
 
   let q = db().from('dispatch_calls').select('*').order('created_at', {ascending: false});
   if (dispatchFilter === 'active') q = q.neq('status', 'resolved');
+  if (dispatchFilter === 'history') q = q.eq('status', 'resolved');
 
   const { data, error } = await q;
 
