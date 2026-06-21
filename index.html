@@ -1136,6 +1136,69 @@ const DRUGS = Object.keys(DRUG_PRICES);
 const FIREARMS = ['SD Pistol','Deagle','Combat Shotgun','MP5','Tec9','Mac-10','Sniper'];
 const CHARGES = ['Aiding a Prison Break','Aiding and Abetting','Assault','Attempted Murder','Battery','Brandishing a Weapon in Public','Bribery','Conspiracy','Criminal Negligence','Criminal Trespassing','Cultivation/Manufacture/Delivery of a Controlled Substance','Destruction of Public Property','Destruction/Falsification of Evidence','Discharge of a Firearm in Public','Disturbance of Peace','Driving Over the Speed Limit','Evading a Law Enforcement Officer','Excessive Use of Force (Force Matrix Violation)','Extortion','FCC Policy Violation','Failing to Act in Aid of a Government Employee','Failure to Follow Sentencing Guidelines','Failure to Identify','Failure to Pay a Ticket','False Imprisonment','Flight Protocol Violation','Fraud','Grand Theft Auto','Impersonating a Government Employee','Indecency','Kidnapping','Malfeasance in Public Office','Misuse of (911) Emergency Hotline','Misuse of Government Issued Equipment','Murder','Mutual Combat','Obstructing a Government Employee','Operating a Vehicle Without a License','Pandering/Pimping','Parking Violation','Possession of a Controlled Substance','Possession of a Controlled Substance With Intent to Sell','Possession of an Illegal Firearm','Prison Break','Prostitution','Reckless Driving','Resisting a Law Enforcement Officer','Riot','Robbery','Sexual Assault','Sexual Battery','Terrorism','Torture','Transporting Illegal Goods','Trespassing','Unlawful Assembly','Unlawful Distribution of a Weapon','Vandalism','Vehicular Assault','Vigilantism'];
 
+const CHARGE_CONFLICTS = {
+  "Driving Over the Speed Limit":["Reckless Driving"],
+  "Reckless Driving":["Driving Over the Speed Limit","Vehicular Assault","Flight Protocol Violation"],
+  "Parking Violation":[],
+  "Operating a Vehicle Without a License":[],
+  "Indecency":["Sexual Assault","Sexual Battery"],
+  "Disturbance of Peace":["Assault","Unlawful Assembly","Riot","Terrorism","Mutual Combat"],
+  "Trespassing":["Criminal Trespassing","Unlawful Assembly"],
+  "Criminal Trespassing":["Trespassing","Unlawful Assembly"],
+  "Misuse of (911) Emergency Hotline":[],
+  "Evading a Law Enforcement Officer":["Resisting a Law Enforcement Officer","Obstructing a Government Employee","Riot"],
+  "Vehicular Assault":["Reckless Driving","Murder","Attempted Murder"],
+  "Grand Theft Auto":["Conspiracy","Vandalism"],
+  "Possession of a Controlled Substance":["Possession of a Controlled Substance With Intent to Sell"],
+  "Possession of a Controlled Substance With Intent to Sell":["Conspiracy","Possession of a Controlled Substance"],
+  "Cultivation/Manufacture/Delivery of a Controlled Substance":["Conspiracy"],
+  "Brandishing a Weapon in Public":["Discharge of a Firearm in Public","Attempted Murder","Murder"],
+  "Discharge of a Firearm in Public":["Brandishing a Weapon in Public"],
+  "Possession of an Illegal Firearm":["Unlawful Distribution of a Weapon"],
+  "Unlawful Distribution of a Weapon":["Conspiracy","Possession of an Illegal Firearm"],
+  "Transporting Illegal Goods":["Conspiracy"],
+  "Obstructing a Government Employee":["Failure to Identify","Aiding and Abetting","Evading a Law Enforcement Officer","Resisting a Law Enforcement Officer"],
+  "Failure to Identify":["Obstructing a Government Employee"],
+  "Failure to Pay a Ticket":[],
+  "Resisting a Law Enforcement Officer":["Obstructing a Government Employee","Evading a Law Enforcement Officer","Unlawful Assembly","Riot"],
+  "Vandalism":["Grand Theft Auto","Destruction of Public Property"],
+  "Conspiracy":["Murder","Attempted Murder","Kidnapping","Robbery","Extortion","Terrorism","Prison Break","Aiding a Prison Break","Bribery","Fraud","Grand Theft Auto","Possession of a Controlled Substance With Intent to Sell","Cultivation/Manufacture/Delivery of a Controlled Substance","Unlawful Distribution of a Weapon","Transporting Illegal Goods","Sexual Assault","Riot"],
+  "Aiding and Abetting":["Prison Break","Aiding a Prison Break","Obstructing a Government Employee"],
+  "Prostitution":["Pandering/Pimping"],
+  "Pandering/Pimping":["Prostitution","FCC Policy Violation"],
+  "Attempted Murder":["Assault","Brandishing a Weapon in Public","Conspiracy","Murder","Terrorism","Torture","Vehicular Assault"],
+  "Murder":["Assault","Attempted Murder","Brandishing a Weapon in Public","Conspiracy","Terrorism","Torture","Vehicular Assault"],
+  "Unlawful Assembly":["Trespassing","Criminal Trespassing","Riot","Disturbance of Peace","Resisting a Law Enforcement Officer"],
+  "Kidnapping":["Aiding a Prison Break","Conspiracy","Extortion","Prison Break"],
+  "Robbery":["Conspiracy","Extortion","Fraud"],
+  "Bribery":["Conspiracy"],
+  "Assault":["Battery","Mutual Combat","Torture","Disturbance of Peace","Terrorism","Murder","Attempted Murder"],
+  "Terrorism":["Assault","Attempted Murder","Battery","Conspiracy","Disturbance of Peace","Murder","Torture"],
+  "Destruction of Public Property":["Vandalism","Prison Break","Aiding a Prison Break"],
+  "FCC Policy Violation":["Pandering/Pimping"],
+  "Impersonating a Government Employee":[],
+  "Battery":["Assault","Mutual Combat","Torture","Terrorism","Prison Break","Aiding a Prison Break"],
+  "Mutual Combat":["Assault","Battery","Disturbance of Peace"],
+  "Torture":["Assault","Battery","Attempted Murder","Murder","Terrorism"],
+  "Fraud":["Conspiracy","Extortion","Robbery"],
+  "Extortion":["Aiding a Prison Break","Conspiracy","Fraud","Kidnapping","Prison Break","Robbery"],
+  "Riot":["Conspiracy","Disturbance of Peace","Evading a Law Enforcement Officer","Resisting a Law Enforcement Officer","Unlawful Assembly"],
+  "Vigilantism":[],
+  "Prison Break":["Aiding a Prison Break","Aiding and Abetting","Assault","Attempted Murder","Battery","Conspiracy","Destruction of Public Property","Extortion","Kidnapping","Murder","Riot","Unlawful Assembly"],
+  "Aiding a Prison Break":["Aiding and Abetting","Assault","Attempted Murder","Battery","Conspiracy","Destruction of Public Property","Extortion","Kidnapping","Murder","Prison Break","Riot","Unlawful Assembly"],
+  "Sexual Assault":["Conspiracy","Indecency","Sexual Battery"],
+  "Sexual Battery":["Sexual Assault","Indecency"],
+  "Flight Protocol Violation":["Reckless Driving"],
+  "Excessive Use of Force (Force Matrix Violation)":[],
+  "Criminal Negligence":["Failing to Act in Aid of a Government Employee"],
+  "False Imprisonment":[],
+  "Malfeasance in Public Office":[],
+  "Failure to Follow Sentencing Guidelines":[],
+  "Destruction/Falsification of Evidence":[],
+  "Failing to Act in Aid of a Government Employee":["Criminal Negligence"],
+  "Misuse of Government Issued Equipment":[]
+};
+
 // ═══════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════
@@ -1922,12 +1985,46 @@ function addArresteeRow() {
   $('arr-rows').appendChild(row);
 }
 
+function checkChargeConflicts(changedSel) {
+  // Find all charge selects in the same arrestee row
+  const row = changedSel.closest('.arr-row');
+  if (!row) return;
+  const allSels = Array.from(row.querySelectorAll('.charge-sel'));
+  const selectedCharges = allSels.map(s => s.value).filter(Boolean);
+
+  // Clear existing conflict warnings
+  allSels.forEach(s => {
+    s.style.borderColor = '';
+    s.title = '';
+    const warn = s.parentElement.querySelector('.charge-conflict-warn');
+    if (warn) warn.remove();
+  });
+
+  // Find conflicts
+  allSels.forEach(s => {
+    const charge = s.value;
+    if (!charge) return;
+    const conflicts = CHARGE_CONFLICTS[charge] || [];
+    const clashes = conflicts.filter(c => selectedCharges.includes(c) && c !== charge);
+    if (clashes.length) {
+      s.style.borderColor = '#f44';
+      const warn = document.createElement('div');
+      warn.className = 'charge-conflict-warn';
+      warn.style.cssText = 'font-size:10px;color:#f77;margin-top:2px;line-height:1.3';
+      warn.textContent = '⚠ Conflicts with: ' + clashes.join(', ');
+      s.parentElement.appendChild(warn);
+    }
+  });
+}
+
 function makeChargeLine(removable) {
   const line = document.createElement('div');
   line.className = 'charge-line';
+  line.style.flexDirection = 'column';
   const sel = makeSelect(CHARGES, 'charge-sel', '— Select charge —');
+  sel.addEventListener('change', () => checkChargeConflicts(sel));
   line.appendChild(sel);
-  if (removable) line.appendChild(rmBtn(() => line.remove()));
+  if (removable) line.appendChild(rmBtn(() => { line.remove(); checkChargeConflicts(sel); }));
   return line;
 }
 
