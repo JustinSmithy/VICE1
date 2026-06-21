@@ -1137,12 +1137,14 @@ const CHARGES = ['Aiding a Prison Break','Aiding and Abetting','Assault','Attemp
 // HELPERS
 // ═══════════════════════════════════════════════════
 const $ = id => document.getElementById(id);
+const STORAGE_BUCKET = 'mugshots';  // Supabase storage bucket name
+const EVIDENCE_SEP  = ' | ';         // Separator for multiple evidence URLs
 const fmtDate = iso => new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 const fmtVal  = n => { n=Number(n)||0; if(n>=1e6)return'$'+(n/1e6).toFixed(1)+'M'; if(n>=1000)return'$'+Math.round(n/1000)+'k'; return'$'+n.toLocaleString(); };
 function logTypeLabel(l){const isF=l.log_type==='firearm'||l.log_type==='both';const isD=l.log_type==='drug'||l.log_type==='both';return l.log_type==='arrest'?'Arrest Only':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';}
 function logTypeCls(l){const isF=l.log_type==='firearm'||l.log_type==='both';const isD=l.log_type==='drug'||l.log_type==='both';return l.log_type==='arrest'?'bg-blue':isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';}
 function logItemStr(l){const p=[];if(l.drug_detail)p.push(l.drug_detail);else if(l.drug)p.push(l.drug);if(l.firearm_detail)p.push(l.firearm_detail);else if(l.firearm)p.push(l.firearm);return p.join(' · ')||l.log_type||'—';}
-function renderEvidenceLinks(ev){if(!ev)return'';const parts=ev.split(' | ');return parts.map((u,i)=>u.startsWith('http')?'<a href="'+u+'" target="_blank" style="color:var(--gold)">View'+(parts.length>1?' #'+(i+1):'')+'</a>':u).join(' &nbsp;');}
+function renderEvidenceLinks(ev){if(!ev)return'';const parts=ev.split(EVIDENCE_SEP);return parts.map((u,i)=>u.startsWith('http')?'<a href="'+u+'" target="_blank" style="color:var(--gold)">View'+(parts.length>1?' #'+(i+1):'')+'</a>':u).join(' &nbsp;');}
 
 function showMsg(id, text, type) {
   const el = $(id);
@@ -1338,7 +1340,7 @@ async function loadProfile() {
 
 async function checkNotifications() {
   if (!officer || !me) return;
-
+  try {
   // Unread mail count
   const { data: msgs } = await db().from('messages').select('id,read').eq('to_id', me.id);
   const unreadMail = (msgs||[]).filter(m => !m.read).length;
@@ -1358,6 +1360,7 @@ async function checkNotifications() {
       else appsBadge.style.display = 'none';
     }
   }
+  } catch(e) { /* session may have expired */ }
 }
 
 // ═══════════════════════════════════════════════════
@@ -1559,7 +1562,7 @@ async function loadDashLogs() {
         const bioStr = [a.dna&&'🧬 DNA',a.fingerprints&&'🖐 Prints'].filter(Boolean).join(' · ');
         ar.innerHTML = `<div style="display:flex;gap:10px;align-items:flex-start">
           ${mugUrl ? `<img src="${mugUrl}" style="width:48px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border-d);flex-shrink:0" />` : ''}
-          <div><div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center">${a.name||'Unknown'}${highRiskBadge}</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>${a.evidence?`<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Evidence:</strong> ${a.evidence.split(' | ').map((u,i)=>u.startsWith('http')?`<a href="${u}" target="_blank" style="color:var(--gold)">View ${a.evidence.split(' | ').length>1?'#'+(i+1):''}</a>`:u).join(' &nbsp;')}</div>`:''} ${bioStr?`<div style="font-size:11px;color:var(--gold);margin-top:4px">${bioStr} on file</div>`:''}</div>
+          <div><div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center">${a.name||'Unknown'}${highRiskBadge}</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>${a.evidence?`<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Evidence:</strong> ${a.evidence.split(EVIDENCE_SEP).map((u,i)=>u.startsWith('http')?`<a href="${u}" target="_blank" style="color:var(--gold)">View ${a.evidence.split(EVIDENCE_SEP).length>1?'#'+(i+1):''}</a>`:u).join(' &nbsp;')}</div>`:''} ${bioStr?`<div style="font-size:11px;color:var(--gold);margin-top:4px">${bioStr} on file</div>`:''}</div>
         </div>`;
         ad.appendChild(ar);
       });
@@ -1636,7 +1639,7 @@ function openLogModal(l, arrestees) {
         + (mugM ? '<img src="'+mugM+'" style="width:56px;height:70px;object-fit:cover;border-radius:5px;border:1px solid var(--border-d);flex-shrink:0" />' : '')
         + '<div style="flex:1"><div style="font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">' + (a.name||'Unknown') + mHighRisk + '</div>'
         + '<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ' + (a.charges||'—') + '</div>'
-        + (a.evidence?'<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Evidence:</strong> '+a.evidence.split(' | ').map((u,i)=>u.startsWith('http')?'<a href="'+u+'" target="_blank" style="color:var(--gold)">View '+(a.evidence.split(' | ').length>1?'#'+(i+1):'')+'</a>':u).join(' &nbsp;')+'</div>':'')
+        + (a.evidence?'<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Evidence:</strong> '+a.evidence.split(EVIDENCE_SEP).map((u,i)=>u.startsWith('http')?'<a href="'+u+'" target="_blank" style="color:var(--gold)">View '+(a.evidence.split(EVIDENCE_SEP).length>1?'#'+(i+1):'')+'</a>':u).join(' &nbsp;')+'</div>':'')
         + (mBioStr ? '<div style="font-size:11px;color:var(--gold);margin-top:4px">'+mBioStr+' on file</div>' : '')
         + '<div style="margin-top:8px">'
         + (a.suspect_id
@@ -2024,14 +2027,14 @@ async function submitLog() {
         for (const file of _evFiles) {
           const ext  = file.name.split('.').pop();
           const path = 'evidence/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
-          const { error: upErr } = await db().storage.from('mugshots').upload(path, file, { upsert: true });
+          const { error: upErr } = await db().storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
           if (!upErr) {
-            const { data: urlData } = db().storage.from('mugshots').getPublicUrl(path);
+            const { data: urlData } = db().storage.from(STORAGE_BUCKET).getPublicUrl(path);
             uploadedUrls.push(urlData.publicUrl);
           }
         }
         if (uploadedUrls.length) {
-          evidenceStr = [evidenceStr, ...uploadedUrls].filter(Boolean).join(' | ');
+          evidenceStr = [evidenceStr, ...uploadedUrls].filter(Boolean).join(EVIDENCE_SEP);
         }
       }
       let suspectId = _suspectId || null;
@@ -2043,9 +2046,9 @@ async function submitLog() {
         // New file uploaded — replace existing
         const ext  = _mugFile.name.split('.').pop();
         const path = 'suspects/' + base.name.toLowerCase().replace(/\s+/g,'-') + '-' + Date.now() + '.' + ext;
-        const { error: upErr } = await db().storage.from('mugshots').upload(path, _mugFile, { upsert: true });
+        const { error: upErr } = await db().storage.from(STORAGE_BUCKET).upload(path, _mugFile, { upsert: true });
         if (!upErr) {
-          const { data: urlData } = db().storage.from('mugshots').getPublicUrl(path);
+          const { data: urlData } = db().storage.from(STORAGE_BUCKET).getPublicUrl(path);
           mugshotUrl = urlData.publicUrl;
         }
       } else if (existingMugshot) {
@@ -2578,8 +2581,6 @@ async function sendCompose() {
 // ═══════════════════════════════════════════════════
 let intrApp = null;
 let intrMsgs = [];
-let intrCurrentMsg = null;
-
 async function openApplicantIntranet() {
   const app = window._lastApp;
   if (!app) return alert('Application data not found. Please check your status again.');
@@ -2973,8 +2974,6 @@ async function deleteApp(id) {
 const RANKS = ['Officer','Corporal','Sergeant','Lieutenant','Captain','Deputy Chief of Police','Chief of Police'];
 
 // Officer edit modal
-let editingOfficerId = null;
-
 async function saveOfficerEdit(id) {
   const row = $('officer-edit-row-' + id);
   const rank  = row.querySelector('.edit-rank').value;
@@ -3243,7 +3242,7 @@ async function deleteSuspect(id) {
   const { data: row } = await db().from('suspects').select('mugshot_url').eq('id', id).single();
   if (row?.mugshot_url) {
     const path = row.mugshot_url.split('/mugshots/')[1];
-    if (path) await db().storage.from('mugshots').remove([path]);
+    if (path) await db().storage.from(STORAGE_BUCKET).remove([path]);
   }
   await db().from('suspects').delete().eq('id', id);
   loadSuspects();
@@ -3262,6 +3261,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (officer) officer.name = newName;
     $('dash-welcome').textContent = `Welcome back, ${officer?.rank} ${newName.split(' ')[0]}`;
     msg.style.color='var(--gold)'; msg.textContent='✓ Name updated.';
+  });
+
+
+  // Activity period buttons
+  ['7','30','all'].forEach(p => {
+    const btn = $(`act-${p}`);
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-activity-period]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadActivity(p === 'all' ? 'all' : parseInt(p));
+    });
   });
 
   $('suspect-add-btn').addEventListener('click', () => {
@@ -3297,9 +3308,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Upload to Supabase Storage bucket 'mugshots'
       const ext  = file.name.split('.').pop();
       const path = 'suspects/' + name.toLowerCase().replace(/\s+/g,'-') + '-' + Date.now() + '.' + ext;
-      const { error: upErr } = await db().storage.from('mugshots').upload(path, file, { upsert: true });
+      const { error: upErr } = await db().storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
       if (upErr) { $('suspect-form-msg').textContent = 'Upload failed: ' + upErr.message; return; }
-      const { data: urlData } = db().storage.from('mugshots').getPublicUrl(path);
+      const { data: urlData } = db().storage.from(STORAGE_BUCKET).getPublicUrl(path);
       mugshot_url = urlData.publicUrl;
     }
 
@@ -3341,9 +3352,9 @@ async function updateSuspectMugshot(input, suspectId) {
   if (label) label.textContent = 'Uploading...';
   const ext  = file.name.split('.').pop();
   const path = 'suspects/update-' + suspectId + '-' + Date.now() + '.' + ext;
-  const { error: upErr } = await db().storage.from('mugshots').upload(path, file, { upsert: true });
+  const { error: upErr } = await db().storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
   if (upErr) { if (label) label.textContent = '❌ Upload failed'; return; }
-  const { data: urlData } = db().storage.from('mugshots').getPublicUrl(path);
+  const { data: urlData } = db().storage.from(STORAGE_BUCKET).getPublicUrl(path);
   const { error: dbErr } = await db().from('suspects').update({ mugshot_url: urlData.publicUrl }).eq('id', suspectId);
   if (dbErr) { if (label) label.textContent = '❌ Save failed'; return; }
   if (label) label.textContent = '✓ Mugshot updated — reload to see it';
@@ -3357,9 +3368,9 @@ async function uploadMugshotForName(input, name) {
   if (label) label.textContent = 'Uploading...';
   const ext  = file.name.split('.').pop();
   const path = 'suspects/' + name.toLowerCase().replace(/\s+/g,'-') + '-' + Date.now() + '.' + ext;
-  const { error: upErr } = await db().storage.from('mugshots').upload(path, file, { upsert: true });
+  const { error: upErr } = await db().storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
   if (upErr) { if (label) label.textContent = '❌ Upload failed'; return; }
-  const { data: urlData } = db().storage.from('mugshots').getPublicUrl(path);
+  const { data: urlData } = db().storage.from(STORAGE_BUCKET).getPublicUrl(path);
   const { data: existing } = await db().from('suspects').select('id').ilike('name', name).maybeSingle();
   if (existing) {
     await db().from('suspects').update({ mugshot_url: urlData.publicUrl }).eq('id', existing.id);
@@ -3679,17 +3690,6 @@ async function loadActivity(days) {
     <div style="font-size:11px;color:var(--ts);margin-top:8px;text-align:right">${periodLabel} · ${sorted.length} officers</div>`;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  ['7','30','all'].forEach(p => {
-    const btn = $(`act-${p}`);
-    if (!btn) return;
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('[data-activity-period]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      loadActivity(p === 'all' ? 'all' : parseInt(p));
-    });
-  });
-});
 
 
 function closeSuspectModal() {
