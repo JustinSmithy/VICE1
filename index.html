@@ -14,6 +14,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0c0f;color:#e8eaf
 :root{
   --gold:#c9a84c;--gold-l:#e8c96a;
   --navy:#0d1117;--navy-m:#161b24;--navy-l:#1e2535;
+  --bg1:#0d1117;   /* page background — same as --navy */
+  --bg2:#161b24;   /* card/panel background — same as --navy-m */
   --border:rgba(201,168,76,0.2);--border-d:rgba(255,255,255,0.07);
   --tp:#e8eaf0;--ts:#8b92a8;
   --red:#d64545;--green:#3db87a
@@ -1000,7 +1002,8 @@ textarea.fi{resize:vertical;min-height:80px}
               </div>
               <div id="compose-pane" style="display:none" class="mail-reply">
                 <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:12px">New Message</div>
-                <div class="fgrp"><label class="flbl">To (Officer name or badge)</label><input class="fi" type="text" id="compose-to" placeholder="e.g. Officer Martinez or V-4821"></div>
+                <div class="fgrp"><label class="flbl">To (Officer name or badge)</label><input class="fi" type="text" id="compose-to" placeholder="Start typing a name, or type VICE for all..." autocomplete="off" list="officer-suggestions" />
+                <datalist id="officer-suggestions"></datalist></div>
                 <div class="fgrp"><label class="flbl">Subject</label><input class="fi" type="text" id="compose-subject" placeholder="Subject..."></div>
                 <div class="fgrp"><label class="flbl">Message</label><textarea class="fi" id="compose-body" style="min-height:100px" placeholder="Type your message..."></textarea></div>
                 <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -1141,6 +1144,7 @@ const STORAGE_BUCKET = 'mugshots';  // Supabase storage bucket name
 const EVIDENCE_SEP  = ' | ';         // Separator for multiple evidence URLs
 const fmtDate = iso => new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 const fmtVal  = n => { n=Number(n)||0; if(n>=1e6)return'$'+(n/1e6).toFixed(1)+'M'; if(n>=1000)return'$'+Math.round(n/1000)+'k'; return'$'+n.toLocaleString(); };
+const escapeHTML = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 function logTypeLabel(l){const isF=l.log_type==='firearm'||l.log_type==='both';const isD=l.log_type==='drug'||l.log_type==='both';return l.log_type==='arrest'?'Arrest Only':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';}
 function logTypeCls(l){const isF=l.log_type==='firearm'||l.log_type==='both';const isD=l.log_type==='drug'||l.log_type==='both';return l.log_type==='arrest'?'bg-blue':isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';}
 function logItemStr(l){const p=[];if(l.drug_detail)p.push(l.drug_detail);else if(l.drug)p.push(l.drug);if(l.firearm_detail)p.push(l.firearm_detail);else if(l.firearm)p.push(l.firearm);return p.join(' · ')||l.log_type||'—';}
@@ -3000,7 +3004,7 @@ async function loadUsers() {
 
     const ua = document.createElement('div'); ua.className='ua'; ua.textContent=initials;
     const ui = document.createElement('div'); ui.className='ui';
-    ui.innerHTML = '<strong>' + o.name + '</strong><span>' + o.rank + ' · ' + o.badge + ' · ' + (o.role==='admin'?'⭐ Admin': o.verified?'✅ Verified':'⏳ Pending Verification') + '</span>';
+    ui.innerHTML = '<strong>' + escapeHTML(o.name) + '</strong><span>' + escapeHTML(o.rank) + ' · ' + escapeHTML(o.badge) + ' · ' + (o.role==='admin'?'⭐ Admin': o.verified?'✅ Verified':'⏳ Pending Verification') + '</span>';
     row.appendChild(ua); row.appendChild(ui);
 
     if (officer?.role==='admin' && o.id!==officer.id) {
@@ -3261,6 +3265,61 @@ document.addEventListener('DOMContentLoaded', () => {
     if (officer) officer.name = newName;
     $('dash-welcome').textContent = `Welcome back, ${officer?.rank} ${newName.split(' ')[0]}`;
     msg.style.color='var(--gold)'; msg.textContent='✓ Name updated.';
+  const bulletinAddBtn = $('bulletin-add-btn');
+  if (bulletinAddBtn) bulletinAddBtn.addEventListener('click', () => {
+    $('bulletin-edit-id').value = '';
+    $('bulletin-title').value = '';
+    $('bulletin-body').value = '';
+    $('bulletin-priority').value = 'normal';
+    $('bulletin-pinned').checked = false;
+    $('bulletin-form-wrap').style.display = 'block';
+  });
+  const bulletinCancelBtn = $('bulletin-cancel-btn');
+  if (bulletinCancelBtn) bulletinCancelBtn.addEventListener('click', () => { $('bulletin-form-wrap').style.display = 'none'; });
+  const bulletinSaveBtn = $('bulletin-save-btn');
+  if (bulletinSaveBtn) bulletinSaveBtn.addEventListener('click', async () => {
+    const title = $('bulletin-title').value.trim();
+    const body  = $('bulletin-body').value.trim();
+    if (!title || !body) { $('bulletin-msg').textContent = 'Title and body required.'; return; }
+    const payload = { title, body, priority: $('bulletin-priority').value, pinned: $('bulletin-pinned').checked, posted_by: me?.id, posted_name: officer?.name };
+    const editId = $('bulletin-edit-id').value;
+    const { error } = editId
+      ? await db().from('bulletins').update(payload).eq('id', editId)
+      : await db().from('bulletins').insert(payload);
+    if (error) { $('bulletin-msg').textContent = 'Error: ' + error.message; return; }
+    $('bulletin-form-wrap').style.display = 'none';
+    loadOps();
+  });
+
+  // Briefing CRUD
+  const briefingAddBtn = $('briefing-add-btn');
+  if (briefingAddBtn) briefingAddBtn.addEventListener('click', () => {
+    $('briefing-form-title').textContent = 'New Mission Briefing';
+    $('briefing-edit-id').value = '';
+    ['briefing-title','briefing-location','briefing-objective','briefing-officers','briefing-outcome'].forEach(id => $(id).value = '');
+    $('briefing-log-id').value = '';
+    $('briefing-status').value = 'active';
+    $('briefing-form-wrap').style.display = 'block';
+  });
+  const briefingCancelBtn = $('briefing-cancel-btn');
+  if (briefingCancelBtn) briefingCancelBtn.addEventListener('click', () => { $('briefing-form-wrap').style.display = 'none'; });
+  const briefingSaveBtn = $('briefing-save-btn');
+  if (briefingSaveBtn) briefingSaveBtn.addEventListener('click', async () => {
+    const title     = $('briefing-title').value.trim();
+    const objective = $('briefing-objective').value.trim();
+    const location  = $('briefing-location').value.trim();
+    if (!title || !objective || !location) { $('briefing-msg').textContent = 'Title, objective and location required.'; return; }
+    const logId = parseInt($('briefing-log-id').value) || null;
+    const payload = { title, objective, location, officers_inv: $('briefing-officers').value.trim()||null, outcome: $('briefing-outcome').value.trim()||null, linked_log_id: logId, status: $('briefing-status').value, created_by: me?.id, created_by_name: officer?.name };
+    const editId = $('briefing-edit-id').value;
+    const { error } = editId
+      ? await db().from('mission_briefings').update(payload).eq('id', editId)
+      : await db().from('mission_briefings').insert(payload);
+    if (error) { $('briefing-msg').textContent = 'Error: ' + error.message; return; }
+    $('briefing-form-wrap').style.display = 'none';
+    loadOps();
+  });
+
   });
 
 
@@ -3517,62 +3576,6 @@ async function loadOps() {
 }
 
 // Bulletin CRUD
-document.addEventListener('DOMContentLoaded', () => {
-  const bulletinAddBtn = $('bulletin-add-btn');
-  if (bulletinAddBtn) bulletinAddBtn.addEventListener('click', () => {
-    $('bulletin-edit-id').value = '';
-    $('bulletin-title').value = '';
-    $('bulletin-body').value = '';
-    $('bulletin-priority').value = 'normal';
-    $('bulletin-pinned').checked = false;
-    $('bulletin-form-wrap').style.display = 'block';
-  });
-  const bulletinCancelBtn = $('bulletin-cancel-btn');
-  if (bulletinCancelBtn) bulletinCancelBtn.addEventListener('click', () => { $('bulletin-form-wrap').style.display = 'none'; });
-  const bulletinSaveBtn = $('bulletin-save-btn');
-  if (bulletinSaveBtn) bulletinSaveBtn.addEventListener('click', async () => {
-    const title = $('bulletin-title').value.trim();
-    const body  = $('bulletin-body').value.trim();
-    if (!title || !body) { $('bulletin-msg').textContent = 'Title and body required.'; return; }
-    const payload = { title, body, priority: $('bulletin-priority').value, pinned: $('bulletin-pinned').checked, posted_by: me?.id, posted_name: officer?.name };
-    const editId = $('bulletin-edit-id').value;
-    const { error } = editId
-      ? await db().from('bulletins').update(payload).eq('id', editId)
-      : await db().from('bulletins').insert(payload);
-    if (error) { $('bulletin-msg').textContent = 'Error: ' + error.message; return; }
-    $('bulletin-form-wrap').style.display = 'none';
-    loadOps();
-  });
-
-  // Briefing CRUD
-  const briefingAddBtn = $('briefing-add-btn');
-  if (briefingAddBtn) briefingAddBtn.addEventListener('click', () => {
-    $('briefing-form-title').textContent = 'New Mission Briefing';
-    $('briefing-edit-id').value = '';
-    ['briefing-title','briefing-location','briefing-objective','briefing-officers','briefing-outcome'].forEach(id => $(id).value = '');
-    $('briefing-log-id').value = '';
-    $('briefing-status').value = 'active';
-    $('briefing-form-wrap').style.display = 'block';
-  });
-  const briefingCancelBtn = $('briefing-cancel-btn');
-  if (briefingCancelBtn) briefingCancelBtn.addEventListener('click', () => { $('briefing-form-wrap').style.display = 'none'; });
-  const briefingSaveBtn = $('briefing-save-btn');
-  if (briefingSaveBtn) briefingSaveBtn.addEventListener('click', async () => {
-    const title     = $('briefing-title').value.trim();
-    const objective = $('briefing-objective').value.trim();
-    const location  = $('briefing-location').value.trim();
-    if (!title || !objective || !location) { $('briefing-msg').textContent = 'Title, objective and location required.'; return; }
-    const logId = parseInt($('briefing-log-id').value) || null;
-    const payload = { title, objective, location, officers_inv: $('briefing-officers').value.trim()||null, outcome: $('briefing-outcome').value.trim()||null, linked_log_id: logId, status: $('briefing-status').value, created_by: me?.id, created_by_name: officer?.name };
-    const editId = $('briefing-edit-id').value;
-    const { error } = editId
-      ? await db().from('mission_briefings').update(payload).eq('id', editId)
-      : await db().from('mission_briefings').insert(payload);
-    if (error) { $('briefing-msg').textContent = 'Error: ' + error.message; return; }
-    $('briefing-form-wrap').style.display = 'none';
-    loadOps();
-  });
-});
 
 async function editBulletin(id) {
   const { data: b } = await db().from('bulletins').select('*').eq('id', id).single();
@@ -3750,7 +3753,7 @@ async function openSuspectModal(suspectId) {
       : '<div style="width:100%;height:140px;background:rgba(10,12,15,.8);display:flex;align-items:center;justify-content:center;font-size:64px">🪪</div>')
     // Info
     + '<div style="padding:1.2rem 1.5rem">'
-    + '<div style="font-size:22px;font-weight:700;margin-bottom:4px">' + (s.name||'Unknown') + '</div>'
+    + '<div style="font-size:22px;font-weight:700;margin-bottom:4px">' + escapeHTML(s.name||'Unknown') + '</div>'
     + (s.affiliations ? '<div style="color:var(--gold);font-weight:600;font-size:14px;margin-bottom:4px">'+s.affiliations+'</div>' : '')
     + '<div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:8px">'
     + (s.known_vehicle ? '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:2px">Known Vehicle</div><div style="font-size:13px">'+s.known_vehicle+'</div></div>' : '')
