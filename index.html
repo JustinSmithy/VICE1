@@ -151,6 +151,7 @@ textarea.fi{resize:vertical;min-height:80px}
 /* log entries */
 .log-entry{background:var(--navy-m);border:1px solid var(--border-d);border-radius:8px;padding:1.25rem 1.5rem;margin-bottom:1rem;border-left:3px solid var(--gold)}
 .le-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.panel{background:var(--bg2);border:1px solid var(--border-d);border-radius:8px;overflow:hidden}.panel-hd{padding:8px 14px;background:rgba(201,168,76,.08);font-size:11px;font-weight:700;letter-spacing:1px;color:var(--gold)}
 .le-meta{font-size:12px;color:var(--ts);margin-top:6px;display:flex;gap:16px;flex-wrap:wrap}
 .log-entry h4{font-size:15px;font-weight:600;margin-top:4px}
 .le-notes{font-size:13px;color:var(--ts);margin-top:8px;line-height:1.5;border-top:1px solid var(--border-d);padding-top:8px}
@@ -1138,6 +1139,10 @@ const CHARGES = ['Aiding a Prison Break','Aiding and Abetting','Assault','Attemp
 const $ = id => document.getElementById(id);
 const fmtDate = iso => new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 const fmtVal  = n => { n=Number(n)||0; if(n>=1e6)return'$'+(n/1e6).toFixed(1)+'M'; if(n>=1000)return'$'+Math.round(n/1000)+'k'; return'$'+n.toLocaleString(); };
+function logTypeLabel(l){const isF=l.log_type==='firearm'||l.log_type==='both';const isD=l.log_type==='drug'||l.log_type==='both';return l.log_type==='arrest'?'Arrest Only':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';}
+function logTypeCls(l){const isF=l.log_type==='firearm'||l.log_type==='both';const isD=l.log_type==='drug'||l.log_type==='both';return l.log_type==='arrest'?'bg-blue':isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';}
+function logItemStr(l){const p=[];if(l.drug_detail)p.push(l.drug_detail);else if(l.drug)p.push(l.drug);if(l.firearm_detail)p.push(l.firearm_detail);else if(l.firearm)p.push(l.firearm);return p.join(' · ')||l.log_type||'—';}
+function renderEvidenceLinks(ev){if(!ev)return'';const parts=ev.split(' | ');return parts.map((u,i)=>u.startsWith('http')?'<a href="'+u+'" target="_blank" style="color:var(--gold)">View'+(parts.length>1?' #'+(i+1):'')+'</a>':u).join(' &nbsp;');}
 
 function showMsg(id, text, type) {
   const el = $(id);
@@ -1448,10 +1453,7 @@ async function loadPublicStats() {
   if (!recent?.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">No records yet.</td></tr>'; return; }
   const rows = document.createDocumentFragment();
   recent.forEach(l => {
-    const isF = l.log_type==='firearm'||l.log_type==='both';
-    const isD = l.log_type==='drug'||l.log_type==='both';
-    const typeLabel = l.log_type==='arrest'?'Arrest Only':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
-    const typeCls   = l.log_type==='arrest'?'bg-blue':isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';
+    const typeLabel=logTypeLabel(l);const typeCls=logTypeCls(l);
     const tr = document.createElement('tr');
     // Build item + qty display from detail strings when available
     const itemParts = [];
@@ -1503,7 +1505,7 @@ async function loadDashLogs() {
         }
         arr.forEach(a => { if(!arrMap[a.log_id]) arrMap[a.log_id]=[]; arrMap[a.log_id].push(a); });
       }
-    } catch(e) { console.warn('loadDashLogs arrestees error:', e); }
+    } catch(e) { /* arrestees/suspects not yet available */ }
   }
 
   const container = $('logs-list');
@@ -1512,16 +1514,7 @@ async function loadDashLogs() {
   const frag = document.createDocumentFragment();
   logs.forEach(l => {
     const arrestees = arrMap[l.id] || [];
-    const isF = l.log_type==='firearm'||l.log_type==='both';
-    const isD = l.log_type==='drug'||l.log_type==='both';
-    const typeLabel = l.log_type==='arrest'?'Arrest Only':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
-    const typeCls   = l.log_type==='arrest'?'bg-blue':isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';
-    const itemParts = [];
-    if (l.drug_detail) itemParts.push(l.drug_detail);
-    else if (l.drug) itemParts.push(l.drug);
-    if (l.firearm_detail) itemParts.push(l.firearm_detail);
-    else if (l.firearm) itemParts.push(l.firearm);
-    const item = itemParts.join(' · ') || '—';
+    const typeLabel=logTypeLabel(l);const typeCls=logTypeCls(l);const item=logItemStr(l);
 
     const entry = document.createElement('div');
     entry.className = 'log-entry';
@@ -1602,15 +1595,13 @@ async function fetchSuspectMugshotsForArrestees(arrestees) {
 }
 
 function openLogModal(l, arrestees) {
-  const isF = l.log_type==='firearm'||l.log_type==='both';
-  const isD = l.log_type==='drug'||l.log_type==='both';
-  const typeLabel = l.log_type==='arrest'?'Arrest Only':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
+  const typeLabel=logTypeLabel(l);
   const canEdit = officer && (officer.id === l.officer_id || officer.role === 'admin');
 
   $('modal-title').textContent = 'Seizure Log — ' + fmtDate(l.created_at);
 
   // Summary banner
-  $('modal-summary-left').innerHTML = '<span class="badge ' + (isF&&isD?'bg-gold':isF?'bg-blue':'bg-red') + '">' + typeLabel + '</span><span class="badge bg-blue">' + (l.op_type||'—') + '</span>' + (arrestees.length ? '<span class="badge bg-red">' + arrestees.length + ' Arrested</span>' : '<span class="badge bg-green">No Arrests</span>') + '<span style="font-size:11px;color:var(--ts);margin-left:4px">Log #' + l.id + '</span>';
+  $('modal-summary-left').innerHTML = '<span class="badge ' + logTypeCls(l) + '">' + typeLabel + '</span><span class="badge bg-blue">' + (l.op_type||'—') + '</span>' + (arrestees.length ? '<span class="badge bg-red">' + arrestees.length + ' Arrested</span>' : '<span class="badge bg-green">No Arrests</span>') + '<span style="font-size:11px;color:var(--ts);margin-left:4px">Log #' + l.id + '</span>';
   $('modal-summary-value').textContent = fmtVal(l.value);
 
   // Populate read-only fields
@@ -2983,17 +2974,6 @@ const RANKS = ['Officer','Corporal','Sergeant','Lieutenant','Captain','Deputy Ch
 
 // Officer edit modal
 let editingOfficerId = null;
-function openOfficerEdit(o) {
-  editingOfficerId = o.id;
-  // Build inline edit row
-  const row = $('officer-edit-row-' + o.id);
-  if (!row) return;
-  const rankSel = row.querySelector('.edit-rank');
-  const badgeIn = row.querySelector('.edit-badge');
-  if (rankSel) rankSel.value = o.rank;
-  if (badgeIn) badgeIn.value = o.badge;
-  row.style.display = 'flex';
-}
 
 async function saveOfficerEdit(id) {
   const row = $('officer-edit-row-' + id);
@@ -3352,19 +3332,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Link suspect to arrestee when name matches — called after a log is submitted
-async function linkArresteesToSuspects(logId, arresteeNames) {
-  for (const name of arresteeNames) {
-    const { data: suspect } = await db().from('suspects')
-      .select('id').ilike('name', name.trim()).maybeSingle();
-    if (suspect) {
-      await db().from('log_arrestees')
-        .update({ suspect_id: suspect.id })
-        .eq('log_id', logId)
-        .ilike('name', name.trim());
-    }
-  }
-}
 
 
 async function updateSuspectMugshot(input, suspectId) {
@@ -3759,11 +3726,6 @@ async function openSuspectModal(suspectId) {
         + arrests.map(a => {
             const l = a.seizure_logs;
             const item = l?.drug_detail||l?.drug||l?.firearm_detail||l?.firearm||l?.log_type||'Log';
-            const evLinks = a.evidence ? a.evidence.split(' | ').map((u,i) =>
-              u.startsWith('http')
-                ? '<a href="'+u+'" target="_blank" style="color:var(--gold)">View '+(a.evidence.split(' | ').length>1?'#'+(i+1):'')+'</a>'
-                : u
-            ).join(' &nbsp;') : '';
             return `<div style="background:rgba(10,12,15,.5);border:1px solid var(--border-d);border-radius:6px;padding:10px 14px;margin-bottom:8px">
               <div style="display:flex;justify-content:space-between;margin-bottom:4px;align-items:center">
                 <span style="color:var(--gold);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px" onclick="closeSuspectModal();document.querySelector('.sb-btn[data-tab=logs]').click()">Log #${l?.id||a.log_id}</span>
@@ -3771,7 +3733,7 @@ async function openSuspectModal(suspectId) {
               </div>
               <div style="font-size:13px;margin-bottom:3px">${item} · ${l?.location||'—'}</div>
               <div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>
-              ${evLinks ? '<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> '+evLinks+'</div>' : ''}
+              ${evLinks ? '<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> '+renderEvidenceLinks(a.evidence)+'</div>' : ''}
               ${l?.officers?.name ? '<div style="font-size:11px;color:var(--ts);margin-top:4px">Officer: '+l.officers.name+'</div>' : ''}
             </div>`;
           }).join('')
