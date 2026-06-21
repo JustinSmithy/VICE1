@@ -1563,9 +1563,10 @@ async function loadDashLogs() {
         const mugUrl = a.suspect_id ? (suspectMugshots[a.suspect_id]||null) : null;
         const chargeCount = a.charges ? a.charges.split(',').filter(Boolean).length : 0;
         const highRiskBadge = chargeCount >= 6 ? `<span style="background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;letter-spacing:.5px;margin-left:6px">⚠ HIGH RISK</span>` : '';
+        const bioStr = [a.dna&&'🧬 DNA',a.fingerprints&&'🖐 Prints'].filter(Boolean).join(' · ');
         ar.innerHTML = `<div style="display:flex;gap:10px;align-items:flex-start">
           ${mugUrl ? `<img src="${mugUrl}" style="width:48px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border-d);flex-shrink:0" />` : ''}
-          <div><div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center">${a.name||'Unknown'}${highRiskBadge}</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>${a.evidence?`<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> ${a.evidence.startsWith('http')?`<a href="${a.evidence}" target="_blank" style="color:var(--gold)">View</a>`:a.evidence}</div>`:''}</div>
+          <div><div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center">${a.name||'Unknown'}${highRiskBadge}</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>${a.evidence?`<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> ${a.evidence.startsWith('http')?`<a href="${a.evidence}" target="_blank" style="color:var(--gold)">View</a>`:a.evidence}</div>`:''} ${bioStr?`<div style="font-size:11px;color:var(--gold);margin-top:4px">${bioStr} on file</div>`:''}</div>
         </div>`;
         ad.appendChild(ar);
       });
@@ -1639,11 +1640,13 @@ function openLogModal(l, arrestees) {
       const mugM = a.suspect_id ? (suspectMugshots[a.suspect_id]||null) : null;
       const mChargeCount = a.charges ? a.charges.split(',').filter(Boolean).length : 0;
       const mHighRisk = mChargeCount >= 6 ? ' <span style="background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;letter-spacing:.5px">⚠ HIGH RISK</span>' : '';
+      const mBioStr = [a.dna&&'🧬 DNA',a.fingerprints&&'🖐 Prints'].filter(Boolean).join(' · ');
       ad.innerHTML = '<div style="display:flex;gap:12px;align-items:flex-start">'
         + (mugM ? '<img src="'+mugM+'" style="width:56px;height:70px;object-fit:cover;border-radius:5px;border:1px solid var(--border-d);flex-shrink:0" />' : '')
         + '<div style="flex:1"><div style="font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">' + (a.name||'Unknown') + mHighRisk + '</div>'
         + '<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ' + (a.charges||'—') + '</div>'
         + (a.evidence?'<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> '+(a.evidence.startsWith('http')?'<a href="'+a.evidence+'" target="_blank" style="color:var(--gold)">View</a>':a.evidence)+'</div>':'')
+        + (mBioStr ? '<div style="font-size:11px;color:var(--gold);margin-top:4px">'+mBioStr+' on file</div>' : '')
         + '<div style="margin-top:8px">'
         + (a.suspect_id
           ? '<label style="font-size:11px;color:var(--ts);cursor:pointer;display:inline-flex;align-items:center;gap:4px">📷 Update mugshot: <input type="file" accept="image/*" style="font-size:11px" data-sid="'+a.suspect_id+'" onchange="updateSuspectMugshot(this,this.dataset.sid)" /></label>'
@@ -1845,7 +1848,16 @@ function addArresteeRow() {
   clist.appendChild(makeChargeLine(false));
   cg.appendChild(ch); cg.appendChild(clist);
 
-  row.appendChild(hd); row.appendChild(fr); row.appendChild(mg); row.appendChild(cg);
+  // DNA & Fingerprint flags
+  const bio = document.createElement('div');
+  bio.style.cssText = 'margin-top:10px;padding:8px 12px;background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.15);border-radius:6px';
+  bio.innerHTML = '<div style="font-size:11px;color:var(--ts);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Biometric Evidence <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional — tick if collected and stored on file)</span></div>'
+    + '<div style="display:flex;gap:1.5rem">'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" class="arr-dna" /> 🧬 DNA Sample</label>'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" class="arr-fp" /> 🖐 Fingerprints</label>'
+    + '</div>';
+
+  row.appendChild(hd); row.appendChild(fr); row.appendChild(mg); row.appendChild(cg); row.appendChild(bio);
   $('arr-rows').appendChild(row);
 }
 
@@ -1918,7 +1930,9 @@ async function submitLog() {
     const mugFile = row.querySelector('.arr-mugshot')?.files[0] || null;
     const suspectId = row.dataset.suspectId || null;
     const existingMugshot = row.dataset.existingMugshot || null;
-    arrestees.push({name, evidence:ev, charges:charges.join(', '), _mugFile: mugFile, _suspectId: suspectId, _existingMugshot: existingMugshot});
+    const dna          = row.querySelector('.arr-dna')?.checked || false;
+    const fingerprints = row.querySelector('.arr-fp')?.checked || false;
+    arrestees.push({name, evidence:ev, charges:charges.join(', '), _mugFile: mugFile, _suspectId: suspectId, _existingMugshot: existingMugshot, dna, fingerprints});
   }
 
   const btn = $('log-submit');
@@ -1946,7 +1960,7 @@ async function submitLog() {
   if (arrestees.length && newLog?.id) {
     // Upload mugshots and upsert suspect records before inserting log_arrestees
     const enriched = await Promise.all(arrestees.map(async a => {
-      const { _mugFile, _suspectId, _existingMugshot, ...base } = a;
+      const { _mugFile, _suspectId, _existingMugshot, dna, fingerprints, ...base } = a;
       let suspectId = _suspectId || null;
       let mugshotUrl = null;
 
@@ -1985,7 +1999,7 @@ async function submitLog() {
         }
       }
 
-      return { ...base, suspect_id: suspectId };
+      return { ...base, suspect_id: suspectId, dna: dna||false, fingerprints: fingerprints||false };
     }));
 
     await db().from('log_arrestees').insert(enriched.map(a => ({log_id:newLog.id,...a})));
