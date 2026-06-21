@@ -1566,7 +1566,7 @@ async function loadDashLogs() {
         const bioStr = [a.dna&&'🧬 DNA',a.fingerprints&&'🖐 Prints'].filter(Boolean).join(' · ');
         ar.innerHTML = `<div style="display:flex;gap:10px;align-items:flex-start">
           ${mugUrl ? `<img src="${mugUrl}" style="width:48px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--border-d);flex-shrink:0" />` : ''}
-          <div><div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center">${a.name||'Unknown'}${highRiskBadge}</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>${a.evidence?`<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> ${a.evidence.startsWith('http')?`<a href="${a.evidence}" target="_blank" style="color:var(--gold)">View</a>`:a.evidence}</div>`:''} ${bioStr?`<div style="font-size:11px;color:var(--gold);margin-top:4px">${bioStr} on file</div>`:''}</div>
+          <div><div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center">${a.name||'Unknown'}${highRiskBadge}</div><div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>${a.evidence?`<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Evidence:</strong> ${a.evidence.split(' | ').map((u,i)=>u.startsWith('http')?`<a href="${u}" target="_blank" style="color:var(--gold)">View ${a.evidence.split(' | ').length>1?'#'+(i+1):''}</a>`:u).join(' &nbsp;')}</div>`:''} ${bioStr?`<div style="font-size:11px;color:var(--gold);margin-top:4px">${bioStr} on file</div>`:''}</div>
         </div>`;
         ad.appendChild(ar);
       });
@@ -1645,7 +1645,7 @@ function openLogModal(l, arrestees) {
         + (mugM ? '<img src="'+mugM+'" style="width:56px;height:70px;object-fit:cover;border-radius:5px;border:1px solid var(--border-d);flex-shrink:0" />' : '')
         + '<div style="flex:1"><div style="font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">' + (a.name||'Unknown') + mHighRisk + '</div>'
         + '<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ' + (a.charges||'—') + '</div>'
-        + (a.evidence?'<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> '+(a.evidence.startsWith('http')?'<a href="'+a.evidence+'" target="_blank" style="color:var(--gold)">View</a>':a.evidence)+'</div>':'')
+        + (a.evidence?'<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Evidence:</strong> '+a.evidence.split(' | ').map((u,i)=>u.startsWith('http')?'<a href="'+u+'" target="_blank" style="color:var(--gold)">View '+(a.evidence.split(' | ').length>1?'#'+(i+1):'')+'</a>':u).join(' &nbsp;')+'</div>':'')
         + (mBioStr ? '<div style="font-size:11px;color:var(--gold);margin-top:4px">'+mBioStr+' on file</div>' : '')
         + '<div style="margin-top:8px">'
         + (a.suspect_id
@@ -1721,6 +1721,17 @@ $('log-type').addEventListener('change', () => {
   $('drug-group').style.display    = hasDrug    ? 'block' : 'none';
   $('firearm-group').style.display = hasFirearm ? 'block' : 'none';
 
+  // Arrest Only — no seizure so value is always 0
+  if (t === 'arrest') {
+    $('log-value').value = '0';
+    $('log-value').readOnly = true;
+    $('log-value').style.opacity = '0.5';
+  } else {
+    $('log-value').readOnly = false;
+    $('log-value').style.opacity = '';
+    if ($('log-value').value === '0') $('log-value').value = '';
+  }
+
   if (hasFirearm && !$('firearm-rows').children.length) addFirearmRow();
 });
 
@@ -1787,9 +1798,34 @@ function addArresteeRow() {
   const ni = document.createElement('input'); ni.className='fi arr-name'; ni.type='text'; ni.placeholder='e.g. Marcus Johnson';
   ng.appendChild(nl); ng.appendChild(ni);
   const eg = document.createElement('div'); eg.className='fgrp'; eg.style.margin='0';
-  const el = document.createElement('label'); el.className='flbl'; el.textContent='Evidence *';
-  const ei = document.createElement('input'); ei.className='fi arr-ev'; ei.type='text'; ei.placeholder='e.g. https://imgur.com/...';
-  eg.appendChild(el); eg.appendChild(ei);
+  const el = document.createElement('label'); el.className='flbl';
+  el.innerHTML = 'Evidence <span style="color:var(--ts);font-weight:400">(link and/or images)</span>';
+
+  // Link field
+  const ei = document.createElement('input'); ei.className='fi arr-ev'; ei.type='text';
+  ei.placeholder='Optional: paste a link e.g. https://imgur.com/...';
+  ei.style.marginBottom = '6px';
+
+  // Multi-image upload
+  const evFiles = document.createElement('input');
+  evFiles.type='file'; evFiles.accept='image/*'; evFiles.multiple=true;
+  evFiles.className='fi arr-ev-files';
+  evFiles.style.cssText='font-size:12px;padding:5px 8px';
+
+  // Preview thumbnails
+  const evPreview = document.createElement('div');
+  evPreview.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-top:6px';
+  evFiles.addEventListener('change', () => {
+    evPreview.innerHTML = '';
+    Array.from(evFiles.files).forEach(f => {
+      const url = URL.createObjectURL(f);
+      const img = document.createElement('img');
+      img.src = url; img.style.cssText='width:56px;height:56px;object-fit:cover;border-radius:4px;border:1px solid var(--border-d)';
+      evPreview.appendChild(img);
+    });
+  });
+
+  eg.appendChild(el); eg.appendChild(ei); eg.appendChild(evFiles); eg.appendChild(evPreview);
   fr.appendChild(ng); fr.appendChild(eg);
 
   // Optional mugshot upload
@@ -1814,11 +1850,34 @@ function addArresteeRow() {
       if (s) {
         row.dataset.suspectId = s.id;
         row.dataset.existingMugshot = s.mugshot_url || '';
+
+        // Check most recent arrest for prior DNA/fingerprint collection
+        let hadDna = false, hadFp = false;
+        try {
+          const { data: priorArr } = await db()
+            .from('log_arrestees')
+            .select('dna,fingerprints')
+            .eq('suspect_id', s.id)
+            .order('log_id', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (priorArr) { hadDna = priorArr.dna; hadFp = priorArr.fingerprints; }
+        } catch(e) {}
+
+        // Pre-tick checkboxes if previously collected
+        const dnaChk = row.querySelector('.arr-dna');
+        const fpChk  = row.querySelector('.arr-fp');
+        if (dnaChk) dnaChk.checked = hadDna;
+        if (fpChk)  fpChk.checked  = hadFp;
+
+        const bioNote = [hadDna && '🧬 DNA', hadFp && '🖐 Prints'].filter(Boolean);
+
         mpreview.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 8px;background:rgba(201,168,76,.08);border:1px solid var(--border-d);border-radius:6px;font-size:12px';
         mpreview.innerHTML = (s.mugshot_url
           ? '<img src="'+s.mugshot_url+'" style="width:36px;height:45px;object-fit:cover;border-radius:3px;border:1px solid var(--border-d)" />'
           : '<div style="width:36px;height:45px;background:rgba(255,255,255,.05);border-radius:3px;border:1px solid var(--border-d);display:flex;align-items:center;justify-content:center;font-size:18px">🪪</div>')
           + '<div><div style="color:var(--gold);font-weight:600">Suspect on record'+(s.mugshot_url?' — mugshot assigned automatically':'')+'</div>'
+          + (bioNote.length ? '<div style="color:var(--gold);font-size:11px;margin-top:2px">'+bioNote.join(' · ')+' already on file — pre-ticked</div>' : '')
           + (s.notes ? '<div style="color:var(--ts)">'+s.notes+'</div>' : '')
           + '<div style="color:var(--ts);margin-top:2px">'+(s.mugshot_url?'Existing mugshot will be used. Upload a new one below to replace it.':'No mugshot yet — upload one below.')+'</div></div>';
       } else {
@@ -1826,9 +1885,13 @@ function addArresteeRow() {
         row.dataset.existingMugshot = '';
         mpreview.style.cssText = 'display:none';
         mpreview.innerHTML = '';
+        // Clear checkboxes for new suspect
+        const dnaChk = row.querySelector('.arr-dna');
+        const fpChk  = row.querySelector('.arr-fp');
+        if (dnaChk) dnaChk.checked = false;
+        if (fpChk)  fpChk.checked  = false;
       }
     } catch(e) {
-      // suspects table may not exist yet
       row.dataset.suspectId = '';
     }
   });
@@ -1924,15 +1987,16 @@ async function submitLog() {
   const arrestees = [];
   for (const row of $('arr-rows').querySelectorAll('.arr-row')) {
     const name    = row.querySelector('.arr-name')?.value.trim();
-    const ev      = row.querySelector('.arr-ev')?.value.trim();
+    const evLink   = row.querySelector('.arr-ev')?.value.trim() || '';
+    const evFiles  = Array.from(row.querySelector('.arr-ev-files')?.files || []);
     const charges = Array.from(row.querySelectorAll('.charge-sel')).map(s=>s.value).filter(Boolean);
-    if (!name||!ev||!charges.length) return showMsg('add-log-msg','Complete all fields for each arrested person.','err');
+    if (!name||!(evLink||evFiles.length)||!charges.length) return showMsg('add-log-msg','Complete all fields for each arrested person (name, evidence, and charges).','err');
     const mugFile = row.querySelector('.arr-mugshot')?.files[0] || null;
     const suspectId = row.dataset.suspectId || null;
     const existingMugshot = row.dataset.existingMugshot || null;
     const dna          = row.querySelector('.arr-dna')?.checked || false;
     const fingerprints = row.querySelector('.arr-fp')?.checked || false;
-    arrestees.push({name, evidence:ev, charges:charges.join(', '), _mugFile: mugFile, _suspectId: suspectId, _existingMugshot: existingMugshot, dna, fingerprints});
+    arrestees.push({name, evidence: evLink, _evFiles: evFiles, charges:charges.join(', '), _mugFile: mugFile, _suspectId: suspectId, _existingMugshot: existingMugshot, dna, fingerprints});
   }
 
   const btn = $('log-submit');
@@ -1960,7 +2024,25 @@ async function submitLog() {
   if (arrestees.length && newLog?.id) {
     // Upload mugshots and upsert suspect records before inserting log_arrestees
     const enriched = await Promise.all(arrestees.map(async a => {
-      const { _mugFile, _suspectId, _existingMugshot, dna, fingerprints, ...base } = a;
+      const { _mugFile, _suspectId, _existingMugshot, _evFiles, dna, fingerprints, ...base } = a;
+
+      // Upload evidence images if provided
+      let evidenceStr = base.evidence || '';
+      if (_evFiles && _evFiles.length) {
+        const uploadedUrls = [];
+        for (const file of _evFiles) {
+          const ext  = file.name.split('.').pop();
+          const path = 'evidence/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
+          const { error: upErr } = await db().storage.from('mugshots').upload(path, file, { upsert: true });
+          if (!upErr) {
+            const { data: urlData } = db().storage.from('mugshots').getPublicUrl(path);
+            uploadedUrls.push(urlData.publicUrl);
+          }
+        }
+        if (uploadedUrls.length) {
+          evidenceStr = [evidenceStr, ...uploadedUrls].filter(Boolean).join(' | ');
+        }
+      }
       let suspectId = _suspectId || null;
       let mugshotUrl = null;
 
@@ -1999,7 +2081,7 @@ async function submitLog() {
         }
       }
 
-      return { ...base, suspect_id: suspectId, dna: dna||false, fingerprints: fingerprints||false };
+      return { ...base, evidence: evidenceStr, suspect_id: suspectId, dna: dna||false, fingerprints: fingerprints||false };
     }));
 
     await db().from('log_arrestees').insert(enriched.map(a => ({log_id:newLog.id,...a})));
@@ -2008,7 +2090,7 @@ async function submitLog() {
   }
 
   showMsg('add-log-msg','✅ Seizure log submitted!','ok');
-  $('log-type').value = ''; $('log-value').value = ''; $('log-location').value = ''; $('log-notes').value = '';
+  $('log-type').value = ''; $('log-value').value = ''; $('log-value').readOnly = false; $('log-value').style.opacity = ''; $('log-location').value = ''; $('log-notes').value = '';
   $('drug-rows').innerHTML = ''; $('firearm-rows').innerHTML = '';
   $('drug-group').style.display = 'none'; $('firearm-group').style.display = 'none';
   $('arr-rows').innerHTML = '<div style="color:var(--ts);font-size:13px;text-align:center;padding:1rem 0;font-style:italic">No arrests — click "Add Person" if arrests were made.</div>';
@@ -3117,7 +3199,7 @@ async function renderSuspectsGrid(suspects) {
   try {
     const { data: arrests } = await db()
       .from('log_arrestees')
-      .select('suspect_id, log_id, name, charges, seizure_logs(id, created_at, location, drug, firearm, log_type)')
+      .select('suspect_id, log_id, name, charges, dna, fingerprints, seizure_logs(id, created_at, location, drug, firearm, log_type)')
       .in('suspect_id', suspectIds);
 
     // Group by suspect_id
@@ -3135,7 +3217,12 @@ async function renderSuspectsGrid(suspects) {
         logsEl.textContent = 'No arrest logs on file.';
         return;
       }
-      logsEl.innerHTML = '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:4px">Arrest History (' + entries.length + ')</div>'
+      // Aggregate biometric flags across all arrests
+      const hadDna = entries.some(a => a.dna);
+      const hadFp  = entries.some(a => a.fingerprints);
+      const bioTags = [hadDna && '🧬 DNA on file', hadFp && '🖐 Prints on file'].filter(Boolean);
+      logsEl.innerHTML = (bioTags.length ? '<div style="color:var(--gold);font-size:11px;font-weight:600;margin-bottom:4px">'+bioTags.join(' · ')+'</div>' : '')
+        + '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:4px">Arrest History (' + entries.length + ')</div>'
         + entries.map(a => {
           const l = a.seizure_logs;
           return `<div style="padding:4px 0;border-top:1px solid var(--border-d)">
@@ -3658,12 +3745,16 @@ async function openSuspectModal(suspectId) {
   try {
     const { data: arrests } = await db()
       .from('log_arrestees')
-      .select('log_id, name, charges, evidence, seizure_logs(id, created_at, location, drug, drug_detail, firearm, firearm_detail, log_type, value, officer_id, officers(name))')
+      .select('log_id, name, charges, evidence, dna, fingerprints, seizure_logs(id, created_at, location, drug, drug_detail, firearm, firearm_detail, log_type, value, officer_id, officers(name))')
       .eq('suspect_id', suspectId)
       .order('log_id', { ascending: false });
 
     if (arrests?.length) {
+      const hadDna = arrests.some(a => a.dna);
+      const hadFp  = arrests.some(a => a.fingerprints);
+      const bioTags = [hadDna && '🧬 DNA on file', hadFp && '🖐 Prints on file'].filter(Boolean);
       arrestsHtml = '<div style="padding:1.2rem 1.5rem;border-top:1px solid var(--border-d)">'
+        + (bioTags.length ? '<div style="color:var(--gold);font-weight:600;font-size:13px;margin-bottom:10px">'+bioTags.join(' · ')+'</div>' : '')
         + '<div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--gold);margin-bottom:10px">ARREST HISTORY (' + arrests.length + ')</div>'
         + arrests.map(a => {
             const l = a.seizure_logs;
