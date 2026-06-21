@@ -440,7 +440,7 @@ textarea.fi{resize:vertical;min-height:80px}
   <div style="max-width:860px;margin:0 auto;padding:3rem 2rem 5rem">
     <div style="text-align:center;padding:3rem 0 2.5rem;border-bottom:1px solid var(--border-d);margin-bottom:3rem">
       <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem">Los Santos Police Department</div>
-      <img src="./vice-unit-logo.jpg" alt="LSPD VICE Division" style="width:200px;height:200px;object-fit:contain;margin-bottom:1.2rem;display:block;margin-left:auto;margin-right:auto" />
+      <img src="./vice-unit-logo.png" alt="LSPD VICE Division" style="width:340px;max-width:90%;height:auto;display:block;margin:0 auto 1.5rem;filter:drop-shadow(0 0 20px rgba(201,168,76,.3))" />
       <h1 style="font-size:2.2rem;font-weight:800;margin-bottom:.5rem">Vice Unit</h1>
       <div style="font-size:14px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:1.5rem">Drug Enforcement Division — Official Handbook</div>
       <div style="display:inline-block;background:rgba(201,168,76,.08);border:1px solid var(--border);border-radius:6px;padding:8px 20px;font-size:12px;color:var(--ts)">🔒 Law Enforcement Sensitive — Official Use Only</div>
@@ -1450,8 +1450,8 @@ async function loadPublicStats() {
   recent.forEach(l => {
     const isF = l.log_type==='firearm'||l.log_type==='both';
     const isD = l.log_type==='drug'||l.log_type==='both';
-    const typeLabel = isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
-    const typeCls   = isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';
+    const typeLabel = l.log_type==='arrest'?'Arrest Only':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
+    const typeCls   = l.log_type==='arrest'?'bg-blue':isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';
     const tr = document.createElement('tr');
     // Build item + qty display from detail strings when available
     const itemParts = [];
@@ -1514,8 +1514,8 @@ async function loadDashLogs() {
     const arrestees = arrMap[l.id] || [];
     const isF = l.log_type==='firearm'||l.log_type==='both';
     const isD = l.log_type==='drug'||l.log_type==='both';
-    const typeLabel = isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
-    const typeCls   = isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';
+    const typeLabel = l.log_type==='arrest'?'Arrest Only':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
+    const typeCls   = l.log_type==='arrest'?'bg-blue':isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';
     const itemParts = [];
     if (l.drug_detail) itemParts.push(l.drug_detail);
     else if (l.drug) itemParts.push(l.drug);
@@ -1603,7 +1603,7 @@ async function fetchSuspectMugshotsForArrestees(arrestees) {
 function openLogModal(l, arrestees) {
   const isF = l.log_type==='firearm'||l.log_type==='both';
   const isD = l.log_type==='drug'||l.log_type==='both';
-  const typeLabel = isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
+  const typeLabel = l.log_type==='arrest'?'Arrest Only':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';
   const canEdit = officer && (officer.id === l.officer_id || officer.role === 'admin');
 
   $('modal-title').textContent = 'Seizure Log — ' + fmtDate(l.created_at);
