@@ -3733,7 +3733,7 @@ async function openSuspectModal(suspectId) {
               </div>
               <div style="font-size:13px;margin-bottom:3px">${item} · ${l?.location||'—'}</div>
               <div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Charges:</strong> ${a.charges||'—'}</div>
-              ${evLinks ? '<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> '+renderEvidenceLinks(a.evidence)+'</div>' : ''}
+              ${a.evidence ? '<div style="font-size:12px;color:var(--ts)"><strong style="color:var(--tp)">Evidence:</strong> '+renderEvidenceLinks(a.evidence)+'</div>' : ''}
               ${l?.officers?.name ? '<div style="font-size:11px;color:var(--ts);margin-top:4px">Officer: '+l.officers.name+'</div>' : ''}
             </div>`;
           }).join('')
