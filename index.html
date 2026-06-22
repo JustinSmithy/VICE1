@@ -631,7 +631,7 @@ textarea.fi{resize:vertical;min-height:80px}
             </div>
             <div class="fgrp"><label class="flbl">Operation Type</label>
               <select class="fi" id="log-optype">
-                <option>Traffic Stop</option><option>Search Warrant</option><option>Undercover Operation</option>
+                <option>Traffic Stop</option><option>Search Warrant</option>
                 <option>Surveillance</option><option>Tip-off / Informant</option><option>Patrol Encounter</option><option>Other</option>
               </select>
             </div>
@@ -1091,7 +1091,7 @@ textarea.fi{resize:vertical;min-height:80px}
       </div>
       <div class="fgrp"><label class="flbl">Operation Type</label>
         <select class="fi" id="edit-optype">
-          <option>Traffic Stop</option><option>Search Warrant</option><option>Undercover Operation</option>
+          <option>Traffic Stop</option><option>Search Warrant</option>
           <option>Surveillance</option><option>Tip-off / Informant</option><option>Patrol Encounter</option><option>Other</option>
         </select>
       </div>
@@ -2062,7 +2062,7 @@ async function submitLog() {
   const op_type  = $('log-optype').value;
   const notes    = $('log-notes').value.trim();
   if (!type)           return showMsg('add-log-msg','Please select a seizure type.','err');
-  if (type !== 'arrest' && (!value||!location)) return showMsg('add-log-msg','Street value and location are required.','err');
+  if (type !== 'arrest' && (value==null||value===''||!location)) return showMsg('add-log-msg','Street value and location are required.','err');
   if (type === 'arrest' && !location) return showMsg('add-log-msg','Location is required.','err');
 
   const drugs = [];
