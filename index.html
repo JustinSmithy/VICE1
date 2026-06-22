@@ -3365,6 +3365,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (officer) officer.name = newName;
     $('dash-welcome').textContent = `Welcome back, ${officer?.rank} ${newName.split(' ')[0]}`;
     msg.style.color='var(--gold)'; msg.textContent='✓ Name updated.';
+  });
+
   const bulletinAddBtn = $('bulletin-add-btn');
   if (bulletinAddBtn) bulletinAddBtn.addEventListener('click', () => {
     $('bulletin-edit-id').value = '';
@@ -3508,7 +3510,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('suspect-form-wrap').style.display = 'none';
     loadSuspects();
   });
-});
 
 
 
