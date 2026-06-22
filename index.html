@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0c0f;color:#e8eaf0;min-height:100vh}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0c0f;color:#e8eaf0;min-height:100vh;overflow-y:auto}
 .pfbg{position:fixed;inset:0;z-index:-1;background-size:cover;background-position:center;pointer-events:none;display:none}
 .pfbg::after{content:'';position:fixed;inset:0;background:rgba(10,12,15,.65);z-index:-1;pointer-events:none}
 :root{
@@ -1288,6 +1288,8 @@ function showPage(name) {
   const bg = $('pfbg');
   if (bg) bg.style.display = (name === 'public') ? 'block' : 'none';
   if (name === 'public') loadPublicStats();
+  // Always restore scroll when navigating — modals may have locked it
+  document.body.style.overflow = '';
 }
 
 // ═══════════════════════════════════════════════════
@@ -3626,6 +3628,7 @@ async function uploadMugshotForName(input, name) {
 
 function closeAppModal() {
   $('app-modal-overlay').style.display = 'none';
+  document.body.style.overflow = '';
 }
 
 function openAppModal(a) {
@@ -4050,7 +4053,12 @@ async function openSuspectModal(suspectId) {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && $('suspect-modal-overlay')?.style.display !== 'none') closeSuspectModal();
+  if (e.key === 'Escape') {
+    if ($('briefing-modal-overlay')?.style.display !== 'none') closeBriefingModal();
+    if ($('suspect-modal-overlay')?.style.display !== 'none') closeSuspectModal();
+    if ($('app-modal-overlay')?.style.display !== 'none') closeAppModal();
+    document.body.style.overflow = '';
+  }
 });
 
 
