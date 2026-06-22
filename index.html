@@ -3109,11 +3109,15 @@ const RANKS = ['Officer','Corporal','Sergeant','Lieutenant','Captain','Deputy Ch
 
 // Officer edit modal
 async function saveOfficerEdit(id) {
-  const row = $('officer-edit-row-' + id);
+  const row  = $('officer-edit-row-' + id);
   const rank  = row.querySelector('.edit-rank').value;
   const badge = row.querySelector('.edit-badge').value.trim().toUpperCase();
+  const name  = row.querySelector('.edit-name')?.value.trim();
+  const roleSel = row.querySelector('.edit-role');
+  const role    = roleSel ? roleSel.value : undefined;
   if (!rank||!badge) return alert('Rank and badge are required.');
-  const { error } = await db().from('officers').update({rank, badge}).eq('id', id);
+  const updateData = role !== undefined ? {rank, badge, name, role} : {rank, badge, name};
+  const { error } = await db().from('officers').update(updateData).eq('id', id);
   if (error) return alert('Error: '+error.message);
   row.style.display = 'none';
   loadUsers();
@@ -3183,6 +3187,21 @@ async function loadUsers() {
 
     editRow.appendChild(document.createTextNode('Rank: ')); editRow.appendChild(rankSel);
     editRow.appendChild(document.createTextNode(' Badge: ')); editRow.appendChild(badgeIn);
+
+    // Only Justin (super admin) can change roles
+    if (me?.id === 'e22839a6-edaa-421a-8dd0-5c9cc94a925b') {
+      const roleSel = document.createElement('select');
+      roleSel.className = 'fi edit-role';
+      roleSel.style.cssText = 'width:110px;padding:8px 10px';
+      [['officer','Officer'],['admin','Admin']].forEach(([val,lbl]) => {
+        const opt = document.createElement('option');
+        opt.value = val; opt.textContent = lbl;
+        if (o.role === val) opt.selected = true;
+        roleSel.appendChild(opt);
+      });
+      editRow.appendChild(document.createTextNode(' Role: ')); editRow.appendChild(roleSel);
+    }
+
     editRow.appendChild(saveBtn); editRow.appendChild(cancelBtn);
     wrap.appendChild(editRow);
 
