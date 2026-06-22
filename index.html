@@ -1985,22 +1985,21 @@ function addArresteeRow() {
   $('arr-rows').appendChild(row);
 }
 
-function checkChargeConflicts(changedSel) {
+function checkChargeConflicts(anySel) {
   // Find all charge selects in the same arrestee row
-  const row = changedSel.closest('.arr-row');
+  const row = anySel.closest('.arr-row');
   if (!row) return;
   const allSels = Array.from(row.querySelectorAll('.charge-sel'));
   const selectedCharges = allSels.map(s => s.value).filter(Boolean);
 
-  // Clear existing conflict warnings
+  // Clear all existing warnings first
   allSels.forEach(s => {
     s.style.borderColor = '';
-    s.title = '';
     const warn = s.parentElement.querySelector('.charge-conflict-warn');
     if (warn) warn.remove();
   });
 
-  // Find conflicts
+  // Rebuild conflicts for every select
   allSels.forEach(s => {
     const charge = s.value;
     if (!charge) return;
@@ -2031,7 +2030,11 @@ function makeChargeLine(removable) {
 function addChargeLine(btn) {
   const list = btn.closest('.fgrp').querySelector('.charge-list');
   if (list.querySelectorAll('.charge-line').length >= 6) { alert('Maximum 6 charges per person.'); return; }
-  list.appendChild(makeChargeLine(true));
+  const line = makeChargeLine(true);
+  list.appendChild(line);
+  // Recheck conflicts across all lines in this arrestee row when a line is added
+  const sel = line.querySelector('.charge-sel');
+  if (sel) checkChargeConflicts(sel);
 }
 
 function renumberArrestees() {
@@ -3384,6 +3387,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ? await db().from('bulletins').update(payload).eq('id', editId)
       : await db().from('bulletins').insert(payload);
     if (error) { $('bulletin-msg').textContent = 'Error: ' + error.message; return; }
+    $('bulletin-edit-id').value = '';
+    $('bulletin-title').value = '';
+    $('bulletin-body').value = '';
+    $('bulletin-msg').textContent = '';
     $('bulletin-form-wrap').style.display = 'none';
     loadOps();
   });
@@ -3413,6 +3420,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ? await db().from('mission_briefings').update(payload).eq('id', editId)
       : await db().from('mission_briefings').insert(payload);
     if (error) { $('briefing-msg').textContent = 'Error: ' + error.message; return; }
+    $('briefing-edit-id').value = '';
+    ['briefing-title','briefing-location','briefing-objective','briefing-officers','briefing-outcome'].forEach(id => $(id).value = '');
+    $('briefing-log-id').value = '';
+    $('briefing-msg').textContent = '';
     $('briefing-form-wrap').style.display = 'none';
     loadOps();
   });
