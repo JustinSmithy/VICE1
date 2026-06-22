@@ -1781,11 +1781,12 @@ function closeLogModal() {
 }
 
 async function saveLogEdit(id) {
-  const value    = parseFloat($('edit-value').value);
+  const rawValue = $('edit-value').value.trim();
+  const value    = rawValue === '' ? null : parseFloat(rawValue);
   const location = $('edit-location').value.trim();
   const op_type  = $('edit-optype').value;
   const notes    = $('edit-notes').value.trim();
-  if (value===''||value==null||!location) return showMsg('edit-msg','Value and location are required.','err');
+  if (value === null || isNaN(value) || !location) return showMsg('edit-msg','Value and location are required.','err');
   $('edit-save-btn').disabled = true; $('edit-save-btn').textContent = 'Saving…';
   const { error } = await db().from('seizure_logs').update({ value, location, op_type, notes }).eq('id', id);
   $('edit-save-btn').disabled = false; $('edit-save-btn').textContent = 'Save Changes';
