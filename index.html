@@ -960,7 +960,6 @@ textarea.fi{resize:vertical;min-height:80px}
                   <button type="button" class="rte-btn" data-cmd="italic" title="Italic"><i>I</i></button>
                   <button type="button" class="rte-btn" data-cmd="underline" title="Underline"><u>U</u></button>
                   <span style="width:1px;background:rgba(255,255,255,.1);margin:2px 4px"></span>
-                  <button type="button" class="rte-btn" data-cmd="insertUnorderedList" title="Bullet list">• List</button>
                   <button type="button" class="rte-btn" data-cmd="removeFormat" title="Clear formatting">✕ Clear</button>
                 </div>
                 <div class="rte-body" id="briefing-objective" contenteditable="true" data-placeholder="What is the aim of this operation?"></div>
@@ -976,7 +975,6 @@ textarea.fi{resize:vertical;min-height:80px}
                   <button type="button" class="rte-btn" data-cmd="italic" title="Italic"><i>I</i></button>
                   <button type="button" class="rte-btn" data-cmd="underline" title="Underline"><u>U</u></button>
                   <span style="width:1px;background:rgba(255,255,255,.1);margin:2px 4px"></span>
-                  <button type="button" class="rte-btn" data-cmd="insertUnorderedList" title="Bullet list">• List</button>
                   <button type="button" class="rte-btn" data-cmd="removeFormat" title="Clear formatting">✕ Clear</button>
                 </div>
                 <div class="rte-body" id="briefing-outcome" contenteditable="true" data-placeholder="Result of the operation..."></div>
@@ -4150,11 +4148,14 @@ async function openBriefingModal(briefingId) {
   document.body.style.overflow = 'hidden';
 
   // Fetch briefing + signups in parallel
-  const [{ data: b }, { data: signups }] = await Promise.all([
-    db().from('mission_briefings').select('*').eq('id', briefingId).single(),
-    db().from('briefing_signups').select('*').eq('briefing_id', briefingId).catch(() => ({ data: [] })),
-  ]);
+  const { data: b } = await db().from('mission_briefings').select('*').eq('id', briefingId).single();
   if (!b) { content.innerHTML = '<div style="padding:2rem;color:var(--ts)">Briefing not found.</div>'; return; }
+
+  let signups = [];
+  try {
+    const { data: sd } = await db().from('briefing_signups').select('*').eq('briefing_id', briefingId);
+    signups = sd || [];
+  } catch(e) { /* table not yet created */ }
 
   const stColor = b.status==='completed' ? '#6adba0' : b.status==='cancelled' ? '#f44' : b.status==='planned' ? '#7ab8ff' : 'var(--gold)';
   const stLabel = b.status==='completed' ? '✅ Completed' : b.status==='cancelled' ? '❌ Cancelled' : b.status==='planned' ? '📅 Planned' : '🟡 Active';
