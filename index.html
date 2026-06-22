@@ -1785,7 +1785,7 @@ async function saveLogEdit(id) {
   const location = $('edit-location').value.trim();
   const op_type  = $('edit-optype').value;
   const notes    = $('edit-notes').value.trim();
-  if (!value||!location) return showMsg('edit-msg','Value and location are required.','err');
+  if (value===''||value==null||!location) return showMsg('edit-msg','Value and location are required.','err');
   $('edit-save-btn').disabled = true; $('edit-save-btn').textContent = 'Saving…';
   const { error } = await db().from('seizure_logs').update({ value, location, op_type, notes }).eq('id', id);
   $('edit-save-btn').disabled = false; $('edit-save-btn').textContent = 'Save Changes';
@@ -3780,6 +3780,20 @@ async function loadOps() {
   cont.innerHTML = html;
 }
 
+async function markAttendance(signupId, attended) {
+  const { error } = await db().from('briefing_signups').update({ attended }).eq('id', signupId);
+  if (error) { alert('Error: ' + error.message); return; }
+  // Refresh the modal content
+  const overlay = $('briefing-modal-overlay');
+  const card = document.querySelector(`[data-briefing-id]`);
+  // Re-open current modal by re-fetching — find briefing id from modal content
+  const editBtn = $('briefing-modal-content')?.querySelector('button[onclick*="editBriefing"]');
+  if (editBtn) {
+    const match = editBtn.getAttribute('onclick').match(/editBriefing\((\d+)\)/);
+    if (match) { await openBriefingModal(parseInt(match[1])); }
+  }
+}
+
 async function signBriefing(briefingId) {
   if (!me || !officer) return;
   const { error } = await db().from('briefing_signups').insert({
@@ -4178,9 +4192,17 @@ async function openBriefingModal(briefingId) {
   html += '<div style="padding:1.5rem 2rem">';
 
   // Grid — location + officers
+  // Build officers display — prefer signups if any exist
+  const officerDisplay = signups.length
+    ? signups.map(s => {
+        const attendIcon = s.attended === true ? ' ✅' : s.attended === false ? ' ❌' : '';
+        return escapeHTML((s.officer_rank||'Officer') + ': ' + s.officer_name) + attendIcon;
+      }).join(', ')
+    : escapeHTML(b.officers_inv||'—');
+
   html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.2rem">
     <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:4px">Location</div><div style="font-size:14px;font-weight:600">${escapeHTML(b.location)}</div></div>
-    <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:4px">Officers Assigned</div><div style="font-size:14px">${escapeHTML(b.officers_inv||'—')}</div></div>
+    <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:4px">Officers Assigned</div><div style="font-size:14px">${officerDisplay}</div></div>
   </div>`;
 
   // Objective (may contain HTML from RTE)
@@ -4203,16 +4225,35 @@ async function openBriefingModal(briefingId) {
   }
 
   // Signups (planned only)
-  if (b.status === 'planned') {
+  if (signups.length || b.status === 'planned') {
     const sups = signups || [];
-    const names = sups.map(s => `<span style="background:rgba(122,184,255,.1);border:1px solid rgba(122,184,255,.3);border-radius:4px;padding:3px 10px;font-size:13px">${escapeHTML((s.officer_rank||'Officer') + ': ' + s.officer_name)}</span>`).join(' ');
-    html += `<div style="margin-bottom:1.2rem;padding:1rem;background:rgba(122,184,255,.05);border:1px solid rgba(122,184,255,.15);border-radius:8px">
-      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7ab8ff;margin-bottom:8px">Officers Signed Up (${sups.length})</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${names||'<span style="font-size:13px;color:var(--ts)">None yet — be the first</span>'}</div>
-      ${alreadySigned
-        ? `<button class="btn" style="border-color:#f44;color:#f44" onclick="unsignBriefing(${b.id});closeBriefingModal()">✕ Withdraw</button>`
-        : `<button class="btn primary" onclick="signBriefing(${b.id});closeBriefingModal()">＋ Sign Up</button>`
-      }
+    const isAdmin = officer?.role === 'admin';
+
+    const rows = sups.map(s => {
+      const attendBtns = isAdmin ? `
+        <div style="display:flex;gap:4px;margin-top:4px">
+          <button class="btn" style="font-size:11px;padding:2px 8px;${s.attended===true?'background:rgba(106,219,160,.15);border-color:#6adba0;color:#6adba0':''}" onclick="markAttendance(${s.id},true)">✅ Attended</button>
+          <button class="btn" style="font-size:11px;padding:2px 8px;${s.attended===false?'background:rgba(244,68,68,.15);border-color:#f44;color:#f44':''}" onclick="markAttendance(${s.id},false)">❌ No Show</button>
+          ${s.attended!==null?`<button class="btn" style="font-size:11px;padding:2px 8px" onclick="markAttendance(${s.id},null)">↩ Reset</button>`:''}
+        </div>` : '';
+      const attendBadge = s.attended===true ? ' <span style="color:#6adba0;font-size:11px">✅</span>'
+                        : s.attended===false ? ' <span style="color:#f44;font-size:11px">❌</span>'
+                        : ' <span style="color:var(--ts);font-size:11px">⏳ Unverified</span>';
+      return `<div style="padding:8px 12px;border-bottom:1px solid var(--border-d)">
+        <div style="font-size:13px;font-weight:600">${escapeHTML((s.officer_rank||'Officer') + ': ' + s.officer_name)}${attendBadge}</div>
+        ${attendBtns}
+      </div>`;
+    }).join('');
+
+    html += `<div style="margin-bottom:1.2rem;background:rgba(122,184,255,.04);border:1px solid rgba(122,184,255,.15);border-radius:8px;overflow:hidden">
+      <div style="padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7ab8ff;background:rgba(122,184,255,.08)">Officers Signed Up (${sups.length})${isAdmin&&sups.length?' — click to mark attendance':''}</div>
+      ${rows||'<div style="padding:10px 12px;font-size:13px;color:var(--ts)">None yet — be the first</div>'}
+      ${b.status==='planned' ? `<div style="padding:8px 12px;border-top:1px solid var(--border-d)">
+        ${alreadySigned
+          ? `<button class="btn" style="border-color:#f44;color:#f44;font-size:12px" onclick="unsignBriefing(${b.id});closeBriefingModal()">✕ Withdraw</button>`
+          : `<button class="btn primary" style="font-size:12px" onclick="signBriefing(${b.id});closeBriefingModal()">＋ Sign Up</button>`
+        }
+      </div>` : ''}
     </div>`;
   }
 
