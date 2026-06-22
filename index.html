@@ -952,8 +952,10 @@ textarea.fi{resize:vertical;min-height:80px}
               <div><label class="flbl">Linked Seizure Log ID (optional)</label><input class="fi" id="briefing-log-id" type="number" placeholder="e.g. 42" /></div>
             </div>
             <div style="margin-bottom:1rem"><label class="flbl">Outcome / Notes</label><textarea class="fi" id="briefing-outcome" rows="2" placeholder="Result of the operation..."></textarea></div>
+            <div style="margin-bottom:1rem"><label class="flbl">Scheduled Date &amp; Time <span style="font-weight:400;color:var(--ts)">(optional — for planned operations)</span></label><input class="fi" type="datetime-local" id="briefing-scheduled-at" style="max-width:280px" /></div>
             <div style="display:flex;gap:8px;align-items:center">
               <select class="fi" id="briefing-status" style="width:160px">
+                <option value="planned">📅 Planned</option>
                 <option value="active">🟡 Active</option>
                 <option value="completed">✅ Completed</option>
                 <option value="cancelled">❌ Cancelled</option>
@@ -3404,7 +3406,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('briefing-edit-id').value = '';
     ['briefing-title','briefing-location','briefing-objective','briefing-officers','briefing-outcome'].forEach(id => $(id).value = '');
     $('briefing-log-id').value = '';
-    $('briefing-status').value = 'active';
+    $('briefing-scheduled-at').value = '';
+    $('briefing-status').value = 'planned';
     $('briefing-form-wrap').style.display = 'block';
   });
   const briefingCancelBtn = $('briefing-cancel-btn');
@@ -3416,7 +3419,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const location  = $('briefing-location').value.trim();
     if (!title || !objective || !location) { $('briefing-msg').textContent = 'Title, objective and location required.'; return; }
     const logId = parseInt($('briefing-log-id').value) || null;
-    const payload = { title, objective, location, officers_inv: $('briefing-officers').value.trim()||null, outcome: $('briefing-outcome').value.trim()||null, linked_log_id: logId, status: $('briefing-status').value, created_by: me?.id, created_by_name: officer?.name };
+    const scheduledAt = $('briefing-scheduled-at').value || null;
+    const payload = { title, objective, location, officers_inv: $('briefing-officers').value.trim()||null, outcome: $('briefing-outcome').value.trim()||null, linked_log_id: logId, status: $('briefing-status').value, scheduled_at: scheduledAt, created_by: me?.id, created_by_name: officer?.name };
     const editId = $('briefing-edit-id').value;
     const { error } = editId
       ? await db().from('mission_briefings').update(payload).eq('id', editId)
@@ -3425,6 +3429,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('briefing-edit-id').value = '';
     ['briefing-title','briefing-location','briefing-objective','briefing-officers','briefing-outcome'].forEach(id => $(id).value = '');
     $('briefing-log-id').value = '';
+    $('briefing-scheduled-at').value = '';
     $('briefing-msg').textContent = '';
     $('briefing-form-wrap').style.display = 'none';
     loadOps();
@@ -3657,8 +3662,8 @@ async function loadOps() {
   html += '<div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--gold);margin:1.5rem 0 10px">🗂 MISSION BRIEFINGS</div>';
   if (briefings?.length) {
     briefings.forEach(b => {
-      const stColor = b.status==='completed' ? '#6adba0' : b.status==='cancelled' ? '#f44' : 'var(--gold)';
-      const stLabel = b.status==='completed' ? '✅ Completed' : b.status==='cancelled' ? '❌ Cancelled' : '🟡 Active';
+      const stColor = b.status==='completed' ? '#6adba0' : b.status==='cancelled' ? '#f44' : b.status==='planned' ? '#7ab8ff' : 'var(--gold)';
+      const stLabel = b.status==='completed' ? '✅ Completed' : b.status==='cancelled' ? '❌ Cancelled' : b.status==='planned' ? '📅 Planned' : '🟡 Active';
       html += `<div style="background:var(--bg2);border:1px solid var(--border-d);border-radius:8px;padding:1rem 1.2rem;margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:4px">
           <div style="font-weight:700;font-size:15px">${b.title}</div>
@@ -3670,7 +3675,7 @@ async function loadOps() {
         </div>
         <div style="margin-bottom:6px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:2px">Objective</div><div style="font-size:13px;line-height:1.5">${b.objective}</div></div>
         ${b.outcome ? `<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:2px">Outcome</div><div style="font-size:13px;line-height:1.5">${b.outcome}</div></div>` : ''}
-        <div style="margin-top:8px;font-size:11px;color:var(--ts)">${b.created_by_name||'Officer'} · ${fmtDate(b.created_at)}${b.linked_log_id ? ` · <span style="color:var(--gold)">Log #${b.linked_log_id}</span>` : ''}</div>
+        <div style="margin-top:8px;font-size:11px;color:var(--ts)">${b.created_by_name||'Officer'} · ${fmtDate(b.created_at)}${b.scheduled_at ? ` · <span style="color:#7ab8ff">📅 ${new Date(b.scheduled_at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>` : ''}${b.linked_log_id ? ` · <span style="color:var(--gold)">Log #${b.linked_log_id}</span>` : ''}</div>
         <div style="margin-top:8px;display:flex;gap:6px">
           <button class="btn" style="font-size:11px;padding:3px 8px" onclick="editBriefing(${b.id})">Edit</button>
           ${officer?.role==='admin' ? `<button class="btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteBriefing(${b.id})">Delete</button>` : ''}
@@ -3713,6 +3718,7 @@ async function editBriefing(id) {
   $('briefing-outcome').value = b.outcome||'';
   $('briefing-log-id').value = b.linked_log_id||'';
   $('briefing-status').value = b.status;
+  $('briefing-scheduled-at').value = b.scheduled_at ? b.scheduled_at.slice(0,16) : '';
   $('briefing-form-wrap').style.display = 'block';
 }
 async function deleteBriefing(id) {
