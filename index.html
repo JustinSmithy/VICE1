@@ -3627,11 +3627,17 @@ async function loadOps() {
   const cont = $('ops-content');
   cont.innerHTML = '<div style="color:var(--ts)">Loading...</div>';
 
-  const [{ data: bulletins }, { data: briefings }, { data: allSignups }] = await Promise.all([
+  const [{ data: bulletins }, { data: briefings }] = await Promise.all([
     db().from('bulletins').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }),
-    db().from('mission_briefings').select('*').order('status', { ascending: true }).order('scheduled_at', { ascending: true }).order('created_at', { ascending: false }),
-    db().from('briefing_signups').select('*').catch(() => []),
+    db().from('mission_briefings').select('*').order('created_at', { ascending: false }),
   ]);
+
+  // Signups — wrapped separately so a missing table doesn't break the whole page
+  let allSignups = [];
+  try {
+    const { data: sd } = await db().from('briefing_signups').select('*');
+    allSignups = sd || [];
+  } catch(e) { /* table not yet created — run 005_operations.sql */ }
 
   const signupsByBriefing = {};
   (allSignups||[]).forEach(s => {
