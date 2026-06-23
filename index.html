@@ -153,6 +153,14 @@ textarea.fi{resize:vertical;min-height:80px}
 /* log entries */
 .log-entry{background:var(--navy-m);border:1px solid var(--border-d);border-radius:8px;padding:1.25rem 1.5rem;margin-bottom:1rem;border-left:3px solid var(--gold)}
 .le-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.faq-item{margin-bottom:1.2rem;border:1px solid var(--border-d);border-radius:8px;overflow:hidden}
+.faq-q{font-weight:700;font-size:14px;padding:12px 16px;background:rgba(201,168,76,.06);color:var(--gold);cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+.faq-q::after{content:'▾';font-size:12px;color:var(--ts);transition:transform .2s}
+.faq-item.open .faq-q::after{transform:rotate(-180deg)}
+.faq-a{font-size:13px;color:var(--tp);line-height:1.7;padding:0 16px;max-height:0;overflow:hidden;transition:max-height .25s ease,padding .25s ease}
+.faq-item.open .faq-a{max-height:300px;padding:12px 16px}
+.faq-a code{background:rgba(255,255,255,.08);border-radius:4px;padding:1px 6px;font-family:monospace;font-size:12px}
+.faq-a strong{color:var(--tp)}
 .rte-wrap{border:1px solid rgba(255,255,255,.12);border-radius:6px;overflow:hidden;background:rgba(10,12,15,.4)}
 .rte-toolbar{display:flex;gap:2px;padding:4px 6px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.08)}
 .rte-btn{background:none;border:1px solid transparent;border-radius:4px;color:var(--ts);cursor:pointer;font-size:13px;font-weight:700;padding:2px 8px;line-height:1.4;transition:background .1s}
@@ -286,6 +294,7 @@ textarea.fi{resize:vertical;min-height:80px}
   <div class="nl">
     <button class="btn" id="nav-public">Public Stats</button>
     <button class="btn" id="nav-apply">Apply to Join</button>
+    <button class="btn" id="nav-faq">FAQ</button>
     <button class="btn" id="nav-handbook">Handbook</button>
     <button class="btn" id="nav-dash" style="display:none">⬅ Dashboard</button>
     <button class="btn primary" id="nav-login">Officer Login</button>
@@ -446,6 +455,146 @@ textarea.fi{resize:vertical;min-height:80px}
 </div>
 
 <!-- ═══════════════════════ HANDBOOK ═══════════════════════ -->
+<div class="page" id="pg-faq">
+  <div style="max-width:860px;margin:0 auto;padding:3rem 2rem">
+
+    <div style="text-align:center;margin-bottom:3rem">
+      <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:8px">LSPD Vice Unit</div>
+      <h1 style="font-size:2rem;font-weight:800;margin:0 0 8px">Frequently Asked Questions</h1>
+      <div style="color:var(--ts);font-size:14px">How to use the VICE Unit system — website and in-game terminal</div>
+    </div>
+
+    <!-- SECTION: Getting Started -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;padding-bottom:6px;border-bottom:1px solid var(--border-d)">GETTING STARTED</div>
+
+    <div class="faq-item">
+      <div class="faq-q">How do I get access to the Vice Unit system?</div>
+      <div class="faq-a">Submit an application through the <strong>Apply to Join</strong> page. Once approved by an admin you will receive confirmation. You can then register an account using the Officer Login on the website. Your account will need to be verified by an admin before you can log anything.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">How do I set up the in-game terminal (/vice)?</div>
+      <div class="faq-a">Place <strong>vice_unit.lua</strong>, <strong>vice_http.lua</strong>, and <strong>vice_codes.lua</strong> into your <code>GTA San Andreas/moonloader/</code> folder. Once in-game, type <strong>/vicebadge V-XXXX</strong> (your badge number) to link your account. After that, type <strong>/vice</strong> to open the terminal.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">The terminal says my badge is not verified — what do I do?</div>
+      <div class="faq-a">Your account needs to be verified by an admin on the website. Contact command and they will verify you in Manage Officers.</div>
+    </div>
+
+    <!-- SECTION: Radio & Dispatch -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin:2rem 0 1rem;padding-bottom:6px;border-bottom:1px solid var(--border-d)">RADIO & DISPATCH</div>
+
+    <div class="faq-item">
+      <div class="faq-q">How do I broadcast a radio code?</div>
+      <div class="faq-a">Type <strong>/r &lt;code&gt;</strong> in game. For example: <code>/r 10-26 B2 blue sedan</code>. The code is echoed in chat with your name and badge, and automatically synced to the Dispatch Centre on the website. You can also add details after the code.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">What codes should I use and when?</div>
+      <div class="faq-a">Common codes: <strong>10-8</strong> (on duty), <strong>10-6</strong> (off duty), <strong>10-26</strong> (traffic stop), <strong>10-26a</strong> (high-risk stop), <strong>10-80</strong> (pursuit), <strong>10-15</strong> (suspect in custody), <strong>Code 4</strong> (no further assistance), <strong>10-99</strong> (end of situation). Type <strong>/vicecodes</strong> in game for the full list.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Why does my radio say "dispatch sync failed"?</div>
+      <div class="faq-a">The bridge server may be waking up from inactivity (it takes up to 50 seconds). The script will automatically retry. If it keeps failing, open <strong>/vice</strong> and click the <strong>Reconnect</strong> button in the Vice Network panel.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">I broadcast a code but the Dispatch Centre still shows Active — how do I close a call?</div>
+      <div class="faq-a">Broadcast a closing code: <strong>Code 4</strong>, <strong>10-99</strong>, <strong>10-15</strong>, <strong>10-19</strong>, or <strong>10-7</strong>. These automatically move the call to History on the website. You can also update the status manually from the Dispatch Centre.</div>
+    </div>
+
+    <!-- SECTION: Logging Seizures -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin:2rem 0 1rem;padding-bottom:6px;border-bottom:1px solid var(--border-d)">LOGGING SEIZURES</div>
+
+    <div class="faq-item">
+      <div class="faq-q">How do I log a seizure from in-game?</div>
+      <div class="faq-a">Open <strong>/vice</strong> → click <strong>Log New Seizure</strong>. Select the type (Narcotics, Firearms, or Both), add the items seized, fill in street value and location, then add any arrested persons with their charges and evidence. Click <strong>Submit</strong>. The log appears on the website immediately.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">How do I log a seizure from the website?</div>
+      <div class="faq-a">Go to Dashboard → <strong>Add Log</strong>. Select the seizure type, add drugs or firearms seized, fill in the street value and location, add arrested persons with charges and evidence photos, then click <strong>Submit Log</strong>.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">What is a Trafficking Arrest and when do I use it?</div>
+      <div class="faq-a">A Trafficking Arrest is used when you arrest someone for <strong>Transporting Illegal Goods</strong> but no drugs or firearms were physically recovered — for example the goods were already delivered or disposed of. Select <strong>Trafficking Arrest</strong> as the seizure type, add the arrested person, and make sure <strong>Transporting Illegal Goods</strong> is one of their charges. Items Seized will show as "Contraband / Undisclosed Goods" on public records.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Can I log a firearm seizure without drug charges?</div>
+      <div class="faq-a">Yes — select <strong>Firearms</strong> as the seizure type. You do not need drugs to be seized. Add the firearm type and quantity, fill in the value and location, and submit.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">How do I add evidence to a log?</div>
+      <div class="faq-a">Under each arrested person in the log form, there is an Evidence field. You can either paste a direct link (e.g. an Imgur URL) or upload one or more screenshots directly. Multiple images are supported — they will all be attached to that person's arrest record.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">What charges can I stack? Some are greyed out.</div>
+      <div class="faq-a">Certain charges conflict with each other based on server law — for example you cannot charge someone with both Assault and Mutual Combat. Conflicting charges are shown in red/greyed out once a conflicting charge is selected. Remove the conflicting charge first if you want to add the other one. Max 6 charges per person.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Can I edit a log after submitting?</div>
+      <div class="faq-a">Yes — go to Seizure Logs, click the log to open it, scroll down to the Edit Log section, make your changes and click Save Changes. Admins can edit any log; officers can only edit their own.</div>
+    </div>
+
+    <!-- SECTION: Suspects -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin:2rem 0 1rem;padding-bottom:6px;border-bottom:1px solid var(--border-d)">SUSPECTS</div>
+
+    <div class="faq-item">
+      <div class="faq-q">How do suspects get added to the system?</div>
+      <div class="faq-a">When you submit a log with an arrested person, the system automatically checks if that name matches an existing suspect record. If it does, the log is linked to their file and their mugshot appears on the arrest. If no record exists, you can add one manually via the <strong>Suspects</strong> tab.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">How do I add a mugshot?</div>
+      <div class="faq-a">In the Suspects tab, click <strong>+ Add Suspect</strong> and upload a photo. Alternatively, when viewing an existing log, if the arrested person is on the suspect file their mugshot is attached automatically. You can also update a mugshot by opening a log and using the "Update mugshot" option next to their name.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">What are DNA and Fingerprint flags?</div>
+      <div class="faq-a">When logging an arrest, you can tick <strong>DNA Sample</strong> and/or <strong>Fingerprints</strong> to indicate that biometric evidence was collected. This shows on the suspect's file as "DNA on file" or "Prints on file". On a future arrest, if samples are already on file those boxes are pre-ticked automatically so you know you do not need to collect them again.</div>
+    </div>
+
+    <!-- SECTION: Operations & Missions -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin:2rem 0 1rem;padding-bottom:6px;border-bottom:1px solid var(--border-d)">OPERATIONS</div>
+
+    <div class="faq-item">
+      <div class="faq-q">What is the difference between a Bulletin and a Mission Briefing?</div>
+      <div class="faq-a"><strong>Bulletins</strong> are command-only announcements — notices, directives, or alerts posted to all officers. Only admins can post them. <strong>Mission Briefings</strong> are operation reports that any officer can create. Use them to document planned or active operations, link them to seizure logs after the fact, and track which officers participated.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">How do I sign up for a planned operation?</div>
+      <div class="faq-a">Go to the <strong>Operations</strong> tab. Planned operations show a <strong>+ Sign Up</strong> button. Click it to add yourself to the roster. You can withdraw at any time. After the operation command will mark attendance for each officer who actually participated.</div>
+    </div>
+
+    <!-- SECTION: General -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin:2rem 0 1rem;padding-bottom:6px;border-bottom:1px solid var(--border-d)">GENERAL</div>
+
+    <div class="faq-item">
+      <div class="faq-q">How do I change my character name on the website?</div>
+      <div class="faq-a">Go to <strong>My Stats</strong> tab → Account section at the top. Enter your new name and click Update Name.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">The website is not loading or showing a blank page — what do I do?</div>
+      <div class="faq-a">Try a hard refresh (Ctrl + Shift + R). If you were logged in, your session restores automatically. If the issue persists contact an admin.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Who do I contact if something is broken or I need help?</div>
+      <div class="faq-a">Use the <strong>IC Intranet</strong> to message command directly, or reach out on Discord. For urgent issues find a Lieutenant or above in-game.</div>
+    </div>
+
+  </div>
+</div>
+
 <div class="page" id="pg-handbook">
   <div style="max-width:860px;margin:0 auto;padding:3rem 2rem 5rem">
     <div style="text-align:center;padding:3rem 0 2.5rem;border-bottom:1px solid var(--border-d);margin-bottom:3rem">
@@ -615,7 +764,7 @@ textarea.fi{resize:vertical;min-height:80px}
                 <option value="drug">Narcotics</option>
                 <option value="firearm">Firearms</option>
                 <option value="both">Narcotics &amp; Firearms</option>
-                <option value="arrest">Arrest Only (No Seizure)</option>
+                <option value="arrest">Trafficking Arrest (No Seizure)</option>
               </select>
             </div>
             <div id="drug-group" style="display:none">
@@ -1237,10 +1386,10 @@ const EVIDENCE_SEP  = ' | ';         // Separator for multiple evidence URLs
 const fmtDate = iso => new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 const fmtVal  = n => { n=Number(n)||0; if(n>=1e6)return'$'+(n/1e6).toFixed(1)+'M'; if(n>=1000)return'$'+Math.round(n/1000)+'k'; return'$'+n.toLocaleString(); };
 const escapeHTML = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-function logTypeLabel(l){const isF=l.log_type==='firearm'||l.log_type==='both';const isD=l.log_type==='drug'||l.log_type==='both';return l.log_type==='arrest'?'Arrest Only':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';}
+function logTypeLabel(l){const isF=l.log_type==='firearm'||l.log_type==='both';const isD=l.log_type==='drug'||l.log_type==='both';return l.log_type==='arrest'?'Trafficking Arrest':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';}
 function logTypeLabelPublic(l){const isF=l.log_type==='firearm'||l.log_type==='both';const isD=l.log_type==='drug'||l.log_type==='both';return l.log_type==='arrest'?'Trafficking Arrest':isF&&isD?'Narcotics & Firearms':isF?'Firearms':'Narcotics';}
 function logTypeCls(l){const isF=l.log_type==='firearm'||l.log_type==='both';const isD=l.log_type==='drug'||l.log_type==='both';return l.log_type==='arrest'?'bg-blue':isF&&isD?'bg-gold':isF?'bg-blue':'bg-red';}
-function logItemStr(l){const p=[];if(l.drug_detail)p.push(l.drug_detail);else if(l.drug)p.push(l.drug);if(l.firearm_detail)p.push(l.firearm_detail);else if(l.firearm)p.push(l.firearm);return p.join(' · ')||l.log_type||'—';}
+function logItemStr(l){if(l.log_type==='arrest')return 'Contraband / Undisclosed Goods';const p=[];if(l.drug_detail)p.push(l.drug_detail);else if(l.drug)p.push(l.drug);if(l.firearm_detail)p.push(l.firearm_detail);else if(l.firearm)p.push(l.firearm);return p.join(' · ')||l.log_type||'—';}
 function renderEvidenceLinks(ev){if(!ev)return'';const parts=ev.split(EVIDENCE_SEP);return parts.map((u,i)=>u.startsWith('http')?'<a href="'+u+'" target="_blank" style="color:var(--gold)">View'+(parts.length>1?' #'+(i+1):'')+'</a>':u).join(' &nbsp;');}
 
 function showMsg(id, text, type) {
@@ -1293,11 +1442,25 @@ function showPage(name) {
   document.body.style.overflow = '';
 }
 
+// FAQ accordion
+document.addEventListener('click', e => {
+  const q = e.target.closest('.faq-q');
+  if (!q) return;
+  const item = q.closest('.faq-item');
+  if (!item) return;
+  const wasOpen = item.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  // Open clicked if it wasn't already open
+  if (!wasOpen) item.classList.add('open');
+});
+
 // ═══════════════════════════════════════════════════
 // NAV WIRING
 // ═══════════════════════════════════════════════════
 $('nav-public').addEventListener('click',   () => showPage('public'));
 $('nav-apply').addEventListener('click',    () => showPage('apply'));
+$('nav-faq').addEventListener('click',      () => showPage('faq'));
 $('nav-handbook').addEventListener('click', () => showPage('handbook'));
 $('nav-dash').addEventListener('click',     () => showPage('dash'));
 $('nav-login').addEventListener('click',    () => showPage('login'));
@@ -1572,7 +1735,9 @@ async function loadPublicStats() {
     else if (l.drug) itemParts.push(l.drug);
     if (l.firearm_detail) itemParts.push(l.firearm_detail);
     else if (l.firearm) itemParts.push(l.firearm);
-    const itemDisplay = itemParts.join(' · ') || '—';
+    const itemDisplay = l.log_type === 'arrest'
+        ? 'Contraband / Undisclosed Goods'
+        : itemParts.join(' · ') || '—';
         const isHighRiskLog = highRiskLogIds.has(l.id);
     const arrestLabel = l.arrests > 0
       ? (isHighRiskLog ? `⚠ ${l.arrests} High Risk Arrest${l.arrests>1?'s':''}` : `${l.arrests} Arrested`)
@@ -1843,7 +2008,7 @@ $('log-type').addEventListener('change', () => {
   $('drug-group').style.display    = hasDrug    ? 'block' : 'none';
   $('firearm-group').style.display = hasFirearm ? 'block' : 'none';
 
-  // Arrest Only — no seizure so value is always 0
+  // Trafficking Arrest — no seizure so value is always 0
   if (t === 'arrest') {
     $('log-value').value = '0';
     $('log-value').readOnly = true;
@@ -2137,7 +2302,7 @@ async function submitLog() {
         if (sel.value === 'Transporting Illegal Goods') hasTransport = true;
       });
     });
-    if (!hasTransport) return showMsg('add-log-msg','Arrest Only logs require at least one person charged with Transporting Illegal Goods.','err');
+    if (!hasTransport) return showMsg('add-log-msg','Trafficking Arrest logs require at least one person charged with Transporting Illegal Goods.','err');
   }
 
   const drugs = [];
