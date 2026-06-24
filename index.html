@@ -792,6 +792,7 @@ textarea.fi{resize:vertical;min-height:80px}
               </select>
             </div>
             <div class="fgrp"><label class="flbl">Notes / Narrative</label><textarea class="fi" id="log-notes" placeholder="Brief description..."></textarea></div>
+            <div class="fgrp"><label class="flbl">Assisting Officers <span style="font-weight:400;color:var(--ts)">(optional)</span></label><input class="fi" type="text" id="log-assisting" placeholder="e.g. Cpl. Martinez, Sgt. Chen" /></div>
             <div style="border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:1.25rem;background:rgba(10,12,15,.4)">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
                 <div><div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:3px">Arrested Persons</div><div style="font-size:12px;color:var(--ts)">Add each individual arrested.</div></div>
@@ -1256,6 +1257,7 @@ textarea.fi{resize:vertical;min-height:80px}
       <div style="margin-bottom:1rem">
         <div class="modal-lbl">Notes / Narrative</div>
         <div class="fi" style="background:var(--navy);pointer-events:none;min-height:60px;white-space:pre-wrap" id="mv-notes"></div>
+        <div id="mv-assisting-row" style="display:none;margin-top:10px"><div class="modal-lbl">Assisting Officers</div><div class="fi" style="background:var(--navy);pointer-events:none" id="mv-assisting"></div></div>
       </div>
       <div id="mv-arrested"></div>
     </div>
@@ -1274,6 +1276,7 @@ textarea.fi{resize:vertical;min-height:80px}
         </select>
       </div>
       <div class="fgrp"><label class="flbl">Notes / Narrative</label><textarea class="fi" id="edit-notes" style="min-height:80px"></textarea></div>
+      <div class="fgrp"><label class="flbl">Assisting Officers</label><input class="fi" type="text" id="edit-assisting" placeholder="e.g. Cpl. Martinez, Sgt. Chen" /></div>
       <div id="edit-msg"></div>
       <div style="display:flex;gap:8px">
         <button class="sbtn" id="edit-save-btn" style="flex:1">Save Changes</button>
@@ -1892,6 +1895,8 @@ function openLogModal(l, arrestees) {
   $('mv-optype').textContent   = l.op_type || '—';
   $('mv-date').textContent     = fmtDate(l.created_at);
   $('mv-notes').textContent    = l.notes || 'N/A';
+  const _mvAr = $('mv-assisting-row'); if(_mvAr) _mvAr.style.display = l.assisting_officers ? '' : 'none';
+  const _mvAe = $('mv-assisting'); if(_mvAe) _mvAe.textContent = l.assisting_officers || '';
 
   // Arrested persons
   const arDiv = $('mv-arrested');
@@ -1913,6 +1918,7 @@ function openLogModal(l, arrestees) {
         + '<div style="flex:1"><div style="font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">' + (a.name||'Unknown') + mHighRisk + '</div>'
         + '<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ' + (a.charges||'—') + '</div>'
         + (a.evidence?'<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Evidence:</strong> '+a.evidence.split(EVIDENCE_SEP).map((u,i)=>u.startsWith('http')?'<a href="'+u+'" target="_blank" style="color:var(--gold)">View '+(a.evidence.split(EVIDENCE_SEP).length>1?'#'+(i+1):'')+'</a>':u).join(' &nbsp;')+'</div>':'')
+        + '<div style="margin-top:4px"><label style="font-size:11px;color:var(--ts);cursor:pointer">📎 Add evidence: <input type="file" accept="image/*" multiple style="font-size:11px" onchange="uploadEditEvidence(this,'+a.id+','+JSON.stringify(a.evidence||'')+')"/></label><span id="ev-msg-'+a.id+'" style="font-size:11px;color:var(--gold);margin-left:6px"></span></div>'
         + (mBioStr ? '<div style="font-size:11px;color:var(--gold);margin-top:4px">'+mBioStr+' on file</div>' : '')
         + '<div style="margin-top:8px">'
         + (a.suspect_id
@@ -1931,7 +1937,8 @@ function openLogModal(l, arrestees) {
     editPane.style.display = 'block';
     $('edit-value').value    = l.value || '';
     $('edit-location').value = l.location || '';
-    $('edit-notes').value    = l.notes || '';
+    $('edit-notes').value      = l.notes || '';
+    const _ea=document.getElementById('edit-assisting'); if(_ea)_ea.value=l.assisting_officers||'';
     const opSel = $('edit-optype');
     for (let i=0; i<opSel.options.length; i++) {
       if (opSel.options[i].text === l.op_type) { opSel.selectedIndex = i; break; }
@@ -1965,7 +1972,8 @@ async function saveLogEdit(id) {
   const notes    = $('edit-notes').value.trim();
   if (value === null || isNaN(value) || !location) return showMsg('edit-msg','Value and location are required.','err');
   $('edit-save-btn').disabled = true; $('edit-save-btn').textContent = 'Saving…';
-  const { error } = await db().from('seizure_logs').update({ value, location, op_type, notes }).eq('id', id);
+  const _eas=document.getElementById('edit-assisting')?.value.trim()||null;
+  const { error } = await db().from('seizure_logs').update({ value, location, op_type, notes, assisting_officers: _eas }).eq('id', id);
   $('edit-save-btn').disabled = false; $('edit-save-btn').textContent = 'Save Changes';
   if (error) return showMsg('edit-msg','Error: '+error.message,'err');
   showMsg('edit-msg','✅ Saved!','ok');
@@ -1989,6 +1997,28 @@ async function openLogById(logId) {
     openLogModal(l, arrestees || []);
   };
   setTimeout(() => tryOpen(3), 400);
+}
+
+async function uploadEditEvidence(input, arresteeId, existingEvidence) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  const msgEl = document.getElementById('ev-msg-' + arresteeId);
+  if (msgEl) msgEl.textContent = 'Uploading...';
+  const urls = [];
+  for (const file of files) {
+    const ext  = file.name.split('.').pop();
+    const path = 'evidence/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
+    const { error } = await db().storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
+    if (error) { if (msgEl) msgEl.textContent = 'Upload failed: ' + error.message; return; }
+    const { data: urlData } = db().storage.from(STORAGE_BUCKET).getPublicUrl(path);
+    urls.push(urlData.publicUrl);
+  }
+  const existing = existingEvidence ? existingEvidence.split(EVIDENCE_SEP).filter(Boolean) : [];
+  const merged   = [...existing, ...urls].join(EVIDENCE_SEP);
+  const { error: dbErr } = await db().from('log_arrestees').update({ evidence: merged }).eq('id', arresteeId);
+  if (dbErr) { if (msgEl) msgEl.textContent = 'Error: ' + dbErr.message; return; }
+  if (msgEl) msgEl.textContent = '✓ ' + urls.length + ' file(s) added';
+  loadDashLogs();
 }
 
 async function deleteLog(id) {
@@ -2211,35 +2241,36 @@ function addArresteeRow() {
   $('arr-rows').appendChild(row);
 }
 
-function checkChargeConflicts(anySel) {
-  // Find all charge selects in the same arrestee row
-  const row = anySel.closest('.arr-row');
-  if (!row) return;
+function recheckRowConflicts(row) {
   const allSels = Array.from(row.querySelectorAll('.charge-sel'));
   const selectedCharges = allSels.map(s => s.value).filter(Boolean);
-
-  // Clear all existing warnings first
+  const conflictSet = new Set();
+  selectedCharges.forEach(charge => {
+    (CHARGE_CONFLICTS[charge] || []).forEach(c => {
+      if (selectedCharges.includes(c)) { conflictSet.add(charge); conflictSet.add(c); }
+    });
+  });
   allSels.forEach(s => {
     s.style.borderColor = '';
-    const warn = s.parentElement.querySelector('.charge-conflict-warn');
-    if (warn) warn.remove();
-  });
-
-  // Rebuild conflicts for every select
-  allSels.forEach(s => {
+    const prev = s.parentElement.querySelector('.charge-conflict-warn');
+    if (prev) prev.remove();
     const charge = s.value;
-    if (!charge) return;
-    const conflicts = CHARGE_CONFLICTS[charge] || [];
-    const clashes = conflicts.filter(c => selectedCharges.includes(c) && c !== charge);
-    if (clashes.length) {
-      s.style.borderColor = '#f44';
-      const warn = document.createElement('div');
-      warn.className = 'charge-conflict-warn';
-      warn.style.cssText = 'font-size:10px;color:#f77;margin-top:2px;line-height:1.3';
-      warn.textContent = '⚠ Conflicts with: ' + clashes.join(', ');
-      s.parentElement.appendChild(warn);
-    }
+    if (!charge || !conflictSet.has(charge)) return;
+    const clashes = (CHARGE_CONFLICTS[charge] || []).filter(c => selectedCharges.includes(c) && c !== charge);
+    if (!clashes.length) return;
+    s.style.borderColor = '#f44';
+    const warn = document.createElement('div');
+    warn.className = 'charge-conflict-warn';
+    warn.style.cssText = 'font-size:10px;color:#f77;margin-top:2px;line-height:1.3';
+    warn.textContent = '⚠ Conflicts with: ' + clashes.join(', ');
+    s.parentElement.appendChild(warn);
   });
+}
+
+function checkChargeConflicts(anySel) {
+  const row = anySel.closest('.arr-row');
+  if (!row) return;
+  recheckRowConflicts(row);
 }
 
 function makeChargeLine(removable) {
