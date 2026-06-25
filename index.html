@@ -1491,8 +1491,10 @@ textarea.fi{resize:vertical;min-height:80px}
       <div class="fgrp"><label class="flbl">Notes / Narrative</label><textarea class="fi" id="edit-notes" style="min-height:80px"></textarea></div>
       <div class="fgrp"><label class="flbl">Assisting Officers</label><div style="position:relative"><input class="fi" type="text" id="edit-assisting" placeholder="Start typing an officer's name…" autocomplete="off" /><div id="edit-assisting-ac" class="officer-ac" style="display:none"></div></div></div>
       <div id="edit-msg"></div>
-      <div style="display:flex;gap:8px">
+      <div id="modal-withhold-row" style="display:none;margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="sbtn" id="edit-save-btn" style="flex:1">Save Changes</button>
+        <button class="btn" id="modal-withhold-btn" style="padding:11px 18px;display:none">⚖️ Withhold Points</button>
         <button class="btn danger" id="modal-del-btn" style="padding:11px 20px">🗑️ Delete</button>
       </div>
     </div>
@@ -2058,6 +2060,11 @@ function renderDashLogs() {
     const arrestees = arrMap[l.id] || [];
     const typeLabel=logTypeLabel(l);const typeCls=logTypeCls(l);const item=logItemStr(l);
 
+    // Admin-only flag: log has arrestees but none have any evidence attached
+    const hasArrestees = arrestees.length > 0;
+    const hasAnyEvidence = arrestees.some(a => a.evidence && a.evidence.trim());
+    const flagNoEvidence = (officer?.role === 'admin') && hasArrestees && !hasAnyEvidence;
+
     const entry = document.createElement('div');
     entry.className = 'log-entry';
     entry.style.cursor = 'pointer';
@@ -2066,7 +2073,7 @@ function renderDashLogs() {
     const top = document.createElement('div');
     top.className = 'le-top';
     const left = document.createElement('div');
-    left.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="badge ${typeCls}">${typeLabel}</span><span class="badge bg-blue">${l.op_type||''}</span>${arrestees.length?`<span class="badge bg-red">${arrestees.length} Arrested</span>`:''}<span style="font-size:11px;color:var(--ts);margin-left:2px">Log #${l.id}</span></div><h4>${item} · ${l.location}</h4>`;
+    left.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap"><span class="badge ${typeCls}">${typeLabel}</span><span class="badge bg-blue">${l.op_type||''}</span>${arrestees.length?`<span class="badge bg-red">${arrestees.length} Arrested</span>`:''}${flagNoEvidence?`<span class="badge" style="background:rgba(240,128,128,.15);color:#f08080;border:1px solid #f08080">⚠ No Evidence</span>`:''}${l.points_withheld&&officer?.role==='admin'?`<span class="badge" style="background:rgba(224,192,104,.15);color:#e0c068;border:1px solid #e0c068">⚖️ Points Withheld</span>`:''}<span style="font-size:11px;color:var(--ts);margin-left:2px">Log #${l.id}</span></div><h4>${item} · ${l.location}</h4>`;
     const right = document.createElement('div');
     right.style.cssText = 'text-align:right;flex-shrink:0;margin-left:12px';
     right.innerHTML = `<div style="color:var(--gold);font-weight:700;font-size:16px">${fmtVal(l.value)}</div><div style="font-size:11px;color:var(--ts);margin-top:2px">${fmtDate(l.created_at)}</div>`;
@@ -2143,7 +2150,8 @@ function openLogModal(l, arrestees) {
   $('modal-title').textContent = 'Seizure Log — ' + fmtDate(l.created_at);
 
   // Summary banner
-  $('modal-summary-left').innerHTML = '<span class="badge ' + logTypeCls(l) + '">' + typeLabel + '</span><span class="badge bg-blue">' + (l.op_type||'—') + '</span>' + (arrestees.length ? '<span class="badge bg-red">' + arrestees.length + ' Arrested</span>' : '<span class="badge bg-green">No Arrests</span>') + '<span style="font-size:11px;color:var(--ts);margin-left:4px">Log #' + l.id + '</span>';
+  const _flagNoEv = (officer?.role === 'admin') && arrestees.length > 0 && !arrestees.some(a => a.evidence && a.evidence.trim());
+  $('modal-summary-left').innerHTML = '<span class="badge ' + logTypeCls(l) + '">' + typeLabel + '</span><span class="badge bg-blue">' + (l.op_type||'—') + '</span>' + (arrestees.length ? '<span class="badge bg-red">' + arrestees.length + ' Arrested</span>' : '<span class="badge bg-green">No Arrests</span>') + (_flagNoEv ? '<span class="badge" style="background:rgba(240,128,128,.15);color:#f08080;border:1px solid #f08080">⚠ No Evidence</span>' : '') + '<span style="font-size:11px;color:var(--ts);margin-left:4px">Log #' + l.id + '</span>';
   $('modal-summary-value').textContent = fmtVal(l.value);
 
   // Populate read-only fields
@@ -2214,6 +2222,28 @@ function openLogModal(l, arrestees) {
     }
     clearMsg('edit-msg');
     $('edit-save-btn').onclick = () => saveLogEdit(l.id);
+
+    // Withhold points — admin only
+    const withholdBtn = $('modal-withhold-btn');
+    const withholdRow = $('modal-withhold-row');
+    if (officer?.role === 'admin') {
+      withholdBtn.style.display = '';
+      const isWithheld = l.points_withheld === true;
+      withholdBtn.textContent = isWithheld ? '✅ Restore Points' : '⚖️ Withhold Points';
+      withholdBtn.style.cssText = 'padding:11px 18px;' + (isWithheld ? 'border-color:#6adba0;color:#6adba0' : 'border-color:#e0c068;color:#e0c068');
+      withholdBtn.onclick = () => toggleWithhold(l.id, !isWithheld);
+      // Status notice
+      if (isWithheld) {
+        withholdRow.style.display = '';
+        withholdRow.innerHTML = '<div style="background:rgba(224,192,104,.12);border:1px solid #e0c068;border-radius:6px;padding:8px 12px;font-size:12px;color:#e0c068">⚖️ Points are currently withheld from this log — it does not count toward the officer\'s activity score.</div>';
+      } else {
+        withholdRow.style.display = 'none';
+      }
+    } else {
+      withholdBtn.style.display = 'none';
+      withholdRow.style.display = 'none';
+    }
+
     // Delete button — admin only
     const delBtn = $('modal-del-btn');
     if (officer?.role === 'admin') {
@@ -2231,6 +2261,17 @@ function openLogModal(l, arrestees) {
 
 function closeLogModal() {
   $('log-modal').style.display = 'none';
+}
+
+async function toggleWithhold(id, withhold) {
+  const msg = withhold
+    ? 'Withhold activity points from this log? It stays on record but will not count toward the officer\'s score.'
+    : 'Restore activity points to this log? It will count toward the officer\'s score again.';
+  if (!confirm(msg)) return;
+  const { error } = await db().from('seizure_logs').update({ points_withheld: withhold }).eq('id', id);
+  if (error) { alert('Error: ' + error.message); return; }
+  closeLogModal();
+  loadDashLogs();
 }
 
 async function saveLogEdit(id) {
@@ -4750,7 +4791,7 @@ async function loadActivity(days) {
   if (!offs?.length) { tbl.innerHTML = '<div style="color:var(--ts)">No officers found.</div>'; return; }
 
   // Fetch logs, dispatch, and operation attendance in the period
-  let logsQ = db().from('seizure_logs').select('officer_id,arrests,assisting_officers,created_at');
+  let logsQ = db().from('seizure_logs').select('officer_id,arrests,assisting_officers,points_withheld,created_at');
   let dispQ = db().from('dispatch_calls').select('officer_id,created_at');
   if (since) { logsQ = logsQ.gte('created_at', since); dispQ = dispQ.gte('created_at', since); }
 
@@ -4771,6 +4812,7 @@ async function loadActivity(days) {
   const touch = (id, when) => { if (stats[id] && (!stats[id].lastActive || when > stats[id].lastActive)) stats[id].lastActive = when; };
 
   (logs||[]).forEach(l => {
+    if (l.points_withheld === true) return; // withheld — no points for this log or its assists
     if (stats[l.officer_id]) {
       stats[l.officer_id].logs++;
       stats[l.officer_id].arrests += Number(l.arrests)||0;
@@ -4892,7 +4934,7 @@ async function openOfficerProfile(officerId) {
 
   // Fetch their logs, dispatch calls, and operation attendance in parallel
   const [logsRes, dispRes, opsRes, notesRes, assistRes] = await Promise.all([
-    db().from('seizure_logs').select('id,log_type,value,arrests,location,created_at').eq('officer_id', officerId).order('created_at',{ascending:false}),
+    db().from('seizure_logs').select('id,log_type,value,arrests,location,points_withheld,created_at').eq('officer_id', officerId).order('created_at',{ascending:false}),
     db().from('dispatch_calls').select('id,created_at').eq('officer_id', officerId),
     db().from('briefing_signups').select('attended').eq('officer_id', officerId).eq('attended', true).then(r=>r).catch(()=>({data:[]})),
     db().from('officer_notes').select('*').eq('officer_id', officerId).order('created_at',{ascending:false}).then(r=>r).catch(()=>({data:[]})),
@@ -4905,12 +4947,17 @@ async function openOfficerProfile(officerId) {
   // Count assists — logs where this officer is named as assisting (excluding their own logs)
   const totalAssists = (assistRes.data || []).filter(l => l.officer_id !== officerId && l.assisting_officers && l.assisting_officers.toLowerCase().includes((o.name||'').toLowerCase())).length;
 
-  // Compute stats
+  // Compute stats — display totals show everything, but score excludes withheld logs
   const totalLogs    = logs.length;
   const totalArrests = logs.reduce((s,l)=>s+(Number(l.arrests)||0),0);
   const totalValue   = logs.reduce((s,l)=>s+(Number(l.value)||0),0);
   const totalDisp    = disp.length;
-  const score = totalLogs*ACTIVITY_WEIGHTS.log + totalArrests*ACTIVITY_WEIGHTS.arrest
+  const withheldCount = logs.filter(l => l.points_withheld === true).length;
+  // Scoring totals exclude withheld logs
+  const scoreLogs    = logs.filter(l => l.points_withheld !== true);
+  const scoredLogCount = scoreLogs.length;
+  const scoredArrests  = scoreLogs.reduce((s,l)=>s+(Number(l.arrests)||0),0);
+  const score = scoredLogCount*ACTIVITY_WEIGHTS.log + scoredArrests*ACTIVITY_WEIGHTS.arrest
               + opsAttended*ACTIVITY_WEIGHTS.operation + totalAssists*ACTIVITY_WEIGHTS.assist + totalDisp*ACTIVITY_WEIGHTS.dispatch;
 
   // Last active
@@ -4949,7 +4996,7 @@ async function openOfficerProfile(officerId) {
     // Score banner
     + '<div style="padding:1.2rem 1.8rem;border-bottom:1px solid var(--border-d);display:flex;align-items:center;justify-content:space-between;gap:1rem">'
     + '<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--ts)">Activity Score</div><div style="font-size:30px;font-weight:800;color:var(--gold);line-height:1.1">'+score+'</div></div>'
-    + '<div style="font-size:11px;color:var(--ts);text-align:right;line-height:1.6">Ops +'+ACTIVITY_WEIGHTS.operation+' · Arrest +'+ACTIVITY_WEIGHTS.arrest+' · Assist +'+ACTIVITY_WEIGHTS.assist+'<br>Log +'+ACTIVITY_WEIGHTS.log+' · Call +'+ACTIVITY_WEIGHTS.dispatch+'</div>'
+    + '<div style="font-size:11px;color:var(--ts);text-align:right;line-height:1.6">Ops +'+ACTIVITY_WEIGHTS.operation+' · Arrest +'+ACTIVITY_WEIGHTS.arrest+' · Assist +'+ACTIVITY_WEIGHTS.assist+'<br>Log +'+ACTIVITY_WEIGHTS.log+' · Call +'+ACTIVITY_WEIGHTS.dispatch+(withheldCount>0?'<br><span style="color:#e0c068">⚖️ '+withheldCount+' log'+(withheldCount!==1?'s':'')+' withheld</span>':'')+'</div>'
     + '</div>'
     // Stat grid
     + '<div style="padding:1.5rem 1.8rem;display:grid;grid-template-columns:repeat(3,1fr);gap:10px">'
