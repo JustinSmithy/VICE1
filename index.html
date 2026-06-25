@@ -2333,8 +2333,12 @@ async function uploadEditEvidence(input, arresteeId, existingEvidence) {
     if (existingEvidence) existing = existingEvidence.split(EVIDENCE_SEP).filter(Boolean);
   }
   const merged = [...existing, ...urls].join(EVIDENCE_SEP);
-  const { error: dbErr } = await db().from('log_arrestees').update({ evidence: merged }).eq('id', arresteeId);
+  const { data: updated, error: dbErr } = await db().from('log_arrestees').update({ evidence: merged }).eq('id', arresteeId).select();
   if (dbErr) { if (msgEl) { msgEl.style.color='#f44'; msgEl.textContent = 'Error: ' + dbErr.message; } return; }
+  if (!updated || !updated.length) {
+    if (msgEl) { msgEl.style.color='#f44'; msgEl.textContent = 'Save blocked — run SQL migration 009 (no UPDATE permission).'; }
+    return;
+  }
   if (msgEl) { msgEl.style.color = '#6adba0'; msgEl.textContent = '✓ ' + urls.length + ' file(s) added'; }
   // Refresh the list AND reopen the modal with fresh data so it shows immediately
   await loadDashLogs();
