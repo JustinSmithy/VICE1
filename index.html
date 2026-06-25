@@ -175,6 +175,10 @@ textarea.fi{resize:vertical;min-height:80px}
 .le-actions{margin-top:10px;padding-top:10px;border-top:1px solid var(--border-d);display:flex;gap:8px}
 .empty{text-align:center;padding:4rem 2rem;color:var(--ts)}
 .empty-icon{font-size:40px;margin-bottom:12px}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(201,168,76,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-state{display:flex;align-items:center;justify-content:center;gap:10px;padding:2.5rem;color:var(--ts);font-size:13px}
+.load-state .spinner{width:16px;height:16px}
 
 /* apps */
 .apps-filter{display:flex;gap:8px;margin-bottom:1.5rem}
@@ -321,6 +325,36 @@ textarea.fi{resize:vertical;min-height:80px}
     <span style="font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);font-weight:700">✦ &nbsp; Built For The Streets &nbsp; ✦</span>
   </div>
 
+  <!-- Mission / Why Join -->
+  <div class="sec" style="padding-bottom:0">
+    <div style="max-width:760px;margin:0 auto;text-align:center">
+      <div class="tag" style="margin-bottom:1rem">The Division</div>
+      <h2 style="font-size:clamp(1.5rem,3vw,2rem);margin-bottom:1rem">The front line against the narcotics trade</h2>
+      <p style="color:#c8cad4;font-size:15px;line-height:1.8;margin-bottom:2.5rem">The Vice Unit is the Los Santos Police Department division charged with dismantling the drug and contraband networks that fuel crime across the city. From street-level enforcement to coordinated operations against trafficking routes, our officers work the cases others can't. This is demanding, intelligence-led police work for those who want to make a real impact on the streets.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.2rem;max-width:900px;margin:0 auto 2rem">
+      <div style="background:var(--bg2);border:1px solid var(--border-d);border-radius:10px;padding:1.5rem;text-align:center">
+        <div style="font-size:32px;margin-bottom:.75rem">🎯</div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:.4rem">Targeted Enforcement</div>
+        <div style="font-size:13px;color:var(--ts);line-height:1.6">Intelligence-led operations against real criminal networks, not random patrol.</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border-d);border-radius:10px;padding:1.5rem;text-align:center">
+        <div style="font-size:32px;margin-bottom:.75rem">🤝</div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:.4rem">Tight-Knit Unit</div>
+        <div style="font-size:13px;color:var(--ts);line-height:1.6">A close team that runs coordinated operations and backs each other on the street.</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border-d);border-radius:10px;padding:1.5rem;text-align:center">
+        <div style="font-size:32px;margin-bottom:.75rem">📈</div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:.4rem">Real Progression</div>
+        <div style="font-size:13px;color:var(--ts);line-height:1.6">Earn rank through documented work. Every commendation and seizure is on record.</div>
+      </div>
+    </div>
+    <div style="text-align:center;padding-bottom:1rem">
+      <button class="btn primary" id="pub-apply-cta" style="font-size:15px;padding:12px 32px">Apply to Join the Vice Unit →</button>
+      <div style="font-size:12px;color:var(--ts);margin-top:10px">Already applied? Check your status on the <span id="pub-faq-link" style="color:var(--gold);cursor:pointer;text-decoration:underline">application page</span>.</div>
+    </div>
+  </div>
+
   <div class="sec">
     <div class="sg">
       <div class="sc"><div class="sc-lbl">Total Drugs Seized</div><div class="sc-val gold" id="pub-weight">—</div></div>
@@ -333,7 +367,7 @@ textarea.fi{resize:vertical;min-height:80px}
       <div class="tbl-head"><h3>Seizure Registry</h3><span class="badge bg-gold">Public Record</span></div>
       <div style="overflow-x:auto"><table>
         <thead><tr><th>Date</th><th>Type</th><th>Items Seized</th><th>Est. Value</th><th>Location</th><th>Status</th></tr></thead>
-        <tbody id="pub-table"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">Loading...</td></tr></tbody>
+        <tbody id="pub-table"><tr><td colspan="7"><div class="load-state"><span class="spinner"></span> Loading enforcement records…</div></td></tr></tbody>
       </table></div>
     </div>
   </div>
@@ -854,7 +888,7 @@ textarea.fi{resize:vertical;min-height:80px}
         <!-- HOME WIDGET -->
         <div class="tab-pane active" id="tab-home">
           <div id="home-widget-content">
-            <div style="color:var(--ts);padding:2rem;text-align:center">Loading...</div>
+            <div class="load-state"><span class="spinner"></span> Loading…</div>
           </div>
         </div>
 
@@ -944,7 +978,7 @@ textarea.fi{resize:vertical;min-height:80px}
             </div>
             <div>
               <div class="map-card"><h4>Legend</h4><div class="map-legend"><div class="ml-item"><div class="ml-dot" style="background:#f08080"></div>Drug seizure</div><div class="ml-item"><div class="ml-dot" style="background:#7ab8ff"></div>Firearm seizure</div><div class="ml-item"><div class="ml-dot" style="background:var(--gold)"></div>Drug + Firearm</div></div></div>
-              <div class="map-card"><h4>Recent Locations</h4><div id="map-recent"><div style="color:var(--ts);font-size:13px">Loading...</div></div></div>
+              <div class="map-card"><h4>Recent Locations</h4><div id="map-recent"><div class="load-state"><span class="spinner"></span> Loading…</div></div></div>
             </div>
           </div>
         </div>
@@ -963,7 +997,7 @@ textarea.fi{resize:vertical;min-height:80px}
             <div class="tbl-head"><h3>Dispatch Log</h3><span class="badge bg-gold" id="dispatch-count">0 Active</span></div>
             <div style="overflow-x:auto"><table>
               <thead><tr><th>Code</th><th>Details</th><th>Location</th><th>Officer</th><th>Status</th><th>Time</th><th></th></tr></thead>
-              <tbody id="dispatch-table"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">Loading...</td></tr></tbody>
+              <tbody id="dispatch-table"><tr><td colspan="7"><div class="load-state"><span class="spinner"></span> Loading dispatch…</div></td></tr></tbody>
             </table></div>
           </div>
           <div style="margin-top:1rem;font-size:11px;color:var(--ts);text-align:center">📡 In-game radio integration active — ten-codes broadcast via /r sync automatically.</div>
@@ -1165,7 +1199,7 @@ textarea.fi{resize:vertical;min-height:80px}
           <div class="map-card" style="margin-top:1.5rem;margin-bottom:0">
             <h4>📍 Hotspot Analysis</h4>
             <div style="color:var(--ts);font-size:12px;margin:-4px 0 1rem">Seizure activity by location — where enforcement is concentrating</div>
-            <div id="hotspot-content" style="color:var(--ts);font-size:13px">Loading...</div>
+            <div id="hotspot-content"><div class="load-state"><span class="spinner"></span> Analysing hotspots…</div></div>
           </div>
         </div>
 
@@ -1602,6 +1636,12 @@ document.addEventListener('click', e => {
 $('nav-public').addEventListener('click',   () => showPage('public'));
 $('nav-apply').addEventListener('click',    () => showPage('apply'));
 $('nav-faq').addEventListener('click',      () => showPage('faq'));
+{
+  const pubApply = document.getElementById('pub-apply-cta');
+  if (pubApply) pubApply.addEventListener('click', () => showPage('apply'));
+  const pubFaqLink = document.getElementById('pub-faq-link');
+  if (pubFaqLink) pubFaqLink.addEventListener('click', () => showPage('apply'));
+}
 $('nav-handbook').addEventListener('click', () => showPage('handbook'));
 $('nav-dash').addEventListener('click',     () => showPage('dash'));
 $('nav-login').addEventListener('click',    () => showPage('login'));
@@ -2720,7 +2760,7 @@ const DISPATCH_STATUS_CLASS  = { active: 'bg-gold', en_route: 'bg-blue', on_scen
 
 async function loadDispatch() {
   const tbody = $('dispatch-table');
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--ts)">Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7"><div class="load-state"><span class="spinner"></span> Loading…</div></td></tr>';
 
   let q = db().from('dispatch_calls').select('*').order('created_at', {ascending: false});
   if (dispatchFilter === 'active') q = q.neq('status', 'resolved');
@@ -3253,7 +3293,7 @@ function threadKeyFor(m, myName) {
 async function loadIntranetMsgs() {
   if (!intrApp) return;
   const list = $('intranet-msg-list');
-  list.innerHTML = '<div style="padding:1rem;color:var(--ts);font-size:13px">Loading...</div>';
+  list.innerHTML = '<div class="load-state"><span class="spinner"></span> Loading…</div>';
 
   // Fetch both messages received AND sent by this applicant
   const { data: msgs, error } = await db().from('messages')
@@ -4429,7 +4469,7 @@ const ACTIVITY_WEIGHTS = {
 async function loadActivity(days) {
   activityPeriod = days;
   const tbl = $('activity-table');
-  tbl.innerHTML = '<div style="color:var(--ts)">Loading...</div>';
+  tbl.innerHTML = '<div class="load-state"><span class="spinner"></span> Loading scoreboard…</div>';
 
   let since = null;
   if (days !== 'all') {
@@ -4557,7 +4597,7 @@ function closeOfficerProfile() {
 async function openOfficerProfile(officerId) {
   const overlay = $('officer-modal-overlay');
   const content = $('officer-modal-content');
-  content.innerHTML = '<div style="padding:2.5rem;color:var(--ts);text-align:center">Loading profile…</div>';
+  content.innerHTML = '<div class="load-state"><span class="spinner"></span> Loading profile…</div>';
   overlay.style.display = 'block';
   document.body.style.overflow = 'hidden';
 
@@ -4721,7 +4761,7 @@ async function deleteOfficerNote(noteId, officerId) {
 async function openSuspectModal(suspectId) {
   const overlay = $('suspect-modal-overlay');
   const content = $('suspect-modal-content');
-  content.innerHTML = '<div style="padding:2rem;color:var(--ts)">Loading...</div>';
+  content.innerHTML = '<div class="load-state"><span class="spinner"></span> Loading…</div>';
   overlay.style.display = 'block';
   document.body.style.overflow = 'hidden';
 
