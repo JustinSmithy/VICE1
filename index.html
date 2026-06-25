@@ -2824,6 +2824,15 @@ async function loadDispatch() {
   const tbody = $('dispatch-table');
   tbody.innerHTML = '<tr><td colspan="7"><div class="load-state"><span class="spinner"></span> Loading…</div></td></tr>';
 
+  // Auto-resolve stale calls — any non-resolved call older than 15 minutes
+  try {
+    const cutoff = new Date(Date.now() - 15*60*1000).toISOString();
+    await db().from('dispatch_calls')
+      .update({ status: 'resolved' })
+      .neq('status', 'resolved')
+      .lt('created_at', cutoff);
+  } catch(e) { /* non-blocking — if it fails, calls just stay active */ }
+
   let q = db().from('dispatch_calls').select('*').order('created_at', {ascending: false});
   if (dispatchFilter === 'active') q = q.neq('status', 'resolved');
   if (dispatchFilter === 'history') q = q.eq('status', 'resolved');
