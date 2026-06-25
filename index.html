@@ -2062,7 +2062,8 @@ function renderDashLogs() {
 
     // Admin-only flag: log has arrestees but none have any evidence attached
     const hasArrestees = arrestees.length > 0;
-    const hasAnyEvidence = arrestees.some(a => a.evidence && a.evidence.trim());
+    const hasRealEvidence = ev => { const e = (ev||'').trim(); return e && e !== '-'; };
+    const hasAnyEvidence = arrestees.some(a => hasRealEvidence(a.evidence));
     const flagNoEvidence = (officer?.role === 'admin') && hasArrestees && !hasAnyEvidence;
 
     const entry = document.createElement('div');
@@ -2150,7 +2151,7 @@ function openLogModal(l, arrestees) {
   $('modal-title').textContent = 'Seizure Log — ' + fmtDate(l.created_at);
 
   // Summary banner
-  const _flagNoEv = (officer?.role === 'admin') && arrestees.length > 0 && !arrestees.some(a => a.evidence && a.evidence.trim());
+  const _flagNoEv = (officer?.role === 'admin') && arrestees.length > 0 && !arrestees.some(a => { const e=(a.evidence||'').trim(); return e && e !== '-'; });
   $('modal-summary-left').innerHTML = '<span class="badge ' + logTypeCls(l) + '">' + typeLabel + '</span><span class="badge bg-blue">' + (l.op_type||'—') + '</span>' + (arrestees.length ? '<span class="badge bg-red">' + arrestees.length + ' Arrested</span>' : '<span class="badge bg-green">No Arrests</span>') + (_flagNoEv ? '<span class="badge" style="background:rgba(240,128,128,.15);color:#f08080;border:1px solid #f08080">⚠ No Evidence</span>' : '') + '<span style="font-size:11px;color:var(--ts);margin-left:4px">Log #' + l.id + '</span>';
   $('modal-summary-value').textContent = fmtVal(l.value);
 
@@ -2313,22 +2314,34 @@ async function uploadEditEvidence(input, arresteeId, existingEvidence) {
   const files = Array.from(input.files);
   if (!files.length) return;
   const msgEl = document.getElementById('ev-msg-' + arresteeId);
-  if (msgEl) msgEl.textContent = 'Uploading...';
+  if (msgEl) { msgEl.style.color = 'var(--gold)'; msgEl.textContent = 'Uploading…'; }
   const urls = [];
   for (const file of files) {
-    const ext  = file.name.split('.').pop();
+    const ext  = (file.name.split('.').pop() || 'png').toLowerCase();
     const path = 'evidence/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
     const { error } = await db().storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
-    if (error) { if (msgEl) msgEl.textContent = 'Upload failed: ' + error.message; return; }
+    if (error) { if (msgEl) { msgEl.style.color='#f44'; msgEl.textContent = 'Upload failed: ' + error.message; } return; }
     const { data: urlData } = db().storage.from(STORAGE_BUCKET).getPublicUrl(path);
     urls.push(urlData.publicUrl);
   }
-  const existing = existingEvidence ? existingEvidence.split(EVIDENCE_SEP).filter(Boolean) : [];
-  const merged   = [...existing, ...urls].join(EVIDENCE_SEP);
+  // Re-fetch the arrestee's CURRENT evidence from the DB so we never overwrite with a stale value
+  let existing = [];
+  try {
+    const { data: cur } = await db().from('log_arrestees').select('evidence').eq('id', arresteeId).single();
+    if (cur?.evidence) existing = cur.evidence.split(EVIDENCE_SEP).filter(Boolean);
+  } catch(e) {
+    if (existingEvidence) existing = existingEvidence.split(EVIDENCE_SEP).filter(Boolean);
+  }
+  const merged = [...existing, ...urls].join(EVIDENCE_SEP);
   const { error: dbErr } = await db().from('log_arrestees').update({ evidence: merged }).eq('id', arresteeId);
-  if (dbErr) { if (msgEl) msgEl.textContent = 'Error: ' + dbErr.message; return; }
-  if (msgEl) msgEl.textContent = '✓ ' + urls.length + ' file(s) added';
-  loadDashLogs();
+  if (dbErr) { if (msgEl) { msgEl.style.color='#f44'; msgEl.textContent = 'Error: ' + dbErr.message; } return; }
+  if (msgEl) { msgEl.style.color = '#6adba0'; msgEl.textContent = '✓ ' + urls.length + ' file(s) added'; }
+  // Refresh the list AND reopen the modal with fresh data so it shows immediately
+  await loadDashLogs();
+  if (typeof openLogById === 'function') {
+    const logId = (_dashArrMap && Object.keys(_dashArrMap).find(lid => (_dashArrMap[lid]||[]).some(a => a.id === arresteeId)));
+    if (logId) openLogById(parseInt(logId));
+  }
 }
 
 async function deleteLog(id) {
