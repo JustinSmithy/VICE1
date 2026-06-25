@@ -121,6 +121,13 @@ textarea.fi{resize:vertical;min-height:80px}
 .apply-card{background:rgba(22,27,36,.92);border:1px solid var(--border);border-radius:12px;padding:2.5rem}
 .apply-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
 .apply-full{grid-column:1/-1}
+.apply-steps{display:flex;align-items:stretch;justify-content:center;gap:8px;flex-wrap:wrap}
+.apply-step{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border-d);border-radius:10px;padding:12px 14px;flex:1;min-width:160px}
+.apply-step-num{width:30px;height:30px;border-radius:50%;background:var(--gold);color:#0a0c0f;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0}
+.apply-step-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.apply-step-desc{font-size:11px;color:var(--ts);line-height:1.4}
+.apply-step-arrow{display:flex;align-items:center;color:var(--gold);font-size:18px;opacity:.5}
+@media(max-width:700px){.apply-step-arrow{display:none}.apply-step{min-width:100%}}
 
 /* dashboard */
 .dash-layout{display:flex;min-height:calc(100vh - 60px)}
@@ -388,11 +395,39 @@ textarea.fi{resize:vertical;min-height:80px}
       <img src="./vice-unit-logo.png" alt="LSPD VICE Division" style="width:260px;max-width:85%;height:auto;display:block;margin:0 auto 1rem;filter:drop-shadow(0 0 16px rgba(201,168,76,.3))" />
       <div class="tag" style="display:inline-block;margin-bottom:8px">LSPD Vice Unit · Drug Enforcement Division</div>
       <h1 style="font-size:1.9rem;font-weight:700;margin-bottom:.5rem">Apply to <span style="color:var(--gold)">Join the Unit</span></h1>
-      <p style="color:var(--ts);font-size:14px;max-width:480px;margin:0 auto;line-height:1.7">Fill in this form as your character. All fields are in-character.</p>
+      <p style="color:var(--ts);font-size:14px;max-width:480px;margin:0 auto;line-height:1.7">The Vice Unit recruits motivated officers ready for intelligence-led drug enforcement. Submit your application below — all fields are in-character.</p>
     </div>
+
+    <!-- Process Timeline -->
+    <div style="margin-bottom:2.5rem">
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:1.25rem">How Recruitment Works</div>
+      <div class="apply-steps">
+        <div class="apply-step">
+          <div class="apply-step-num">1</div>
+          <div class="apply-step-body"><div class="apply-step-title">Apply</div><div class="apply-step-desc">Submit this in-character application form.</div></div>
+        </div>
+        <div class="apply-step-arrow">→</div>
+        <div class="apply-step">
+          <div class="apply-step-num">2</div>
+          <div class="apply-step-body"><div class="apply-step-title">Ride Along</div><div class="apply-step-desc">Selected applicants join a VICE officer on patrol.</div></div>
+        </div>
+        <div class="apply-step-arrow">→</div>
+        <div class="apply-step">
+          <div class="apply-step-num">3</div>
+          <div class="apply-step-body"><div class="apply-step-title">Review</div><div class="apply-step-desc">Command reviews your conduct and application.</div></div>
+        </div>
+        <div class="apply-step-arrow">→</div>
+        <div class="apply-step">
+          <div class="apply-step-num">✓</div>
+          <div class="apply-step-body"><div class="apply-step-title">Approved</div><div class="apply-step-desc">Register your account and link your badge.</div></div>
+        </div>
+      </div>
+    </div>
+
     <div class="apply-card">
       <div style="border-left:3px solid var(--gold);padding-left:12px;margin-bottom:2rem">
         <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">In-Character Application</div>
+        <div style="font-size:13px;color:var(--ts);line-height:1.6">Complete every field as your character. Be specific in your reasons for joining — generic applications are less likely to progress.</div>
       </div>
       <div id="apply-msg"></div>
       <div class="apply-grid">
@@ -413,11 +448,11 @@ textarea.fi{resize:vertical;min-height:80px}
     </div>
 
     <!-- Application Status Check -->
-    <div style="margin-top:2rem">
+    <div style="margin-top:3rem;padding-top:2.5rem;border-top:1px solid var(--border-d)">
       <div style="text-align:center;margin-bottom:1.5rem">
-        <div style="font-size:13px;color:var(--ts);margin-bottom:.5rem">Already applied?</div>
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem">Track Your Progress</div>
         <div style="font-size:22px;font-weight:700;margin-bottom:.25rem">Check Your Application</div>
-        <div style="font-size:13px;color:var(--ts)">Enter your Discord handle to see your status and any messages from the unit.</div>
+        <div style="font-size:13px;color:var(--ts);max-width:420px;margin:0 auto;line-height:1.6">Already applied? Enter your Discord handle to see your current status and any messages from the unit.</div>
       </div>
       <div class="apply-card" style="max-width:500px;margin:0 auto">
         <div id="status-msg"></div>
@@ -3520,44 +3555,98 @@ $('app-submit').addEventListener('click', async () => {
 
 async function loadApps() {
   const list = $('apps-list');
-  list.textContent = 'Loading…';
+  list.innerHTML = '<div class="load-state"><span class="spinner"></span> Loading applications…</div>';
   let q = db().from('applications').select('*').order('created_at',{ascending:false});
   if (appsFilter !== 'all') q = q.eq('status', appsFilter);
   const { data, error } = await q;
-  if (error||!data?.length) { list.textContent = error?'Error: '+error.message:'No applications yet.'; return; }
+  if (error) { list.textContent = 'Error: '+error.message; return; }
+  if (!data?.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>No '+(appsFilter==='all'?'':appsFilter+' ')+'applications.</p></div>';
+    return;
+  }
+
+  // Parse email + discord out of the backstory field
+  const parseContact = a => {
+    let email = '', discord = '';
+    if (a.backstory) {
+      const em = a.backstory.match(/Email:\s*([^|]+)/i);
+      const dc = a.backstory.match(/Discord:\s*([^|]+)/i);
+      if (em) email = em[1].trim();
+      if (dc) discord = dc[1].trim();
+    }
+    if (!discord && a.name) discord = a.name;
+    return { email, discord };
+  };
+
+  const statusMeta = {
+    pending:  { label: 'Pending',    color: '#e0c068', bg: 'rgba(224,192,104,.12)' },
+    reviewed: { label: 'Ride Along', color: '#7ab8ff', bg: 'rgba(122,184,255,.12)' },
+    approved: { label: 'Approved',   color: '#6adba0', bg: 'rgba(106,219,160,.12)' },
+    rejected: { label: 'Rejected',   color: '#f08080', bg: 'rgba(240,128,128,.12)' },
+  };
+
   const frag = document.createDocumentFragment();
   data.forEach(a => {
+    const st = statusMeta[a.status||'pending'] || statusMeta.pending;
+    const { email, discord } = parseContact(a);
+    const initials = (a.char_name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+
     const card = document.createElement('div');
     card.className = 'app-card';
     card.style.cursor = 'pointer';
+    card.style.borderLeft = '3px solid ' + st.color;
     card.addEventListener('click', e => { if (!e.target.closest('button')) openAppModal(a); });
-    const contact = a.backstory?.startsWith('Email:') ? a.backstory : `Contact: ${a.name||'—'}`;
 
-    const head = document.createElement('div'); head.className = 'app-head';
-    const headLeft = document.createElement('div');
-    const h4 = document.createElement('h4');
-    h4.textContent = a.char_name + ' ';
-    const rankSpan = document.createElement('span');
-    rankSpan.style.cssText = 'font-weight:400;color:var(--ts)';
-    rankSpan.textContent = '— ' + (a.phone||'Unknown Rank');
-    h4.appendChild(rankSpan);
-    const meta = document.createElement('div'); meta.className = 'app-meta';
-    meta.textContent = `📧 ${contact} · ${fmtDate(a.created_at)}`;
-    headLeft.appendChild(h4); headLeft.appendChild(meta);
-    const statusSpan = document.createElement('span');
-    statusSpan.className = 's-' + (a.status||'pending');
-    statusSpan.style.cssText = 'font-size:12px;font-weight:600;text-transform:capitalize;border:1px solid currentColor;padding:3px 10px;border-radius:20px';
-    statusSpan.textContent = a.status||'pending';
-    head.appendChild(headLeft); head.appendChild(statusSpan);
+    // Header: avatar + name/meta + status pill
+    const head = document.createElement('div');
+    head.style.cssText = 'display:flex;align-items:flex-start;gap:14px;margin-bottom:1rem';
 
-    const why = document.createElement('div'); why.style.cssText = 'font-size:13px;margin-bottom:.5rem';
-    const whyLbl = document.createElement('strong');
-    whyLbl.style.cssText = 'font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--ts)';
+    const avatar = document.createElement('div');
+    avatar.style.cssText = 'width:46px;height:46px;border-radius:50%;background:'+st.bg+';border:1px solid '+st.color+';color:'+st.color+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0';
+    avatar.textContent = initials;
+
+    const headMid = document.createElement('div');
+    headMid.style.cssText = 'flex:1;min-width:0';
+    const nameRow = document.createElement('div');
+    nameRow.style.cssText = 'font-size:16px;font-weight:700;margin-bottom:3px';
+    nameRow.innerHTML = escapeHTML(a.char_name||'Unknown') + ' <span style="font-weight:400;color:var(--ts);font-size:14px">— ' + escapeHTML(a.phone||'Unknown Rank') + '</span>';
+    const metaRow = document.createElement('div');
+    metaRow.style.cssText = 'font-size:12px;color:var(--ts);display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center';
+    metaRow.innerHTML =
+      (email ? '<span>✉️ ' + escapeHTML(email) + '</span>' : '')
+      + (discord ? '<span>💬 ' + escapeHTML(discord) + '</span>' : '')
+      + '<span>🕓 ' + fmtDate(a.created_at) + '</span>'
+      + (a.review_notes ? '<span style="color:#7ab8ff">📝 Has ride-along notes</span>' : '');
+    headMid.appendChild(nameRow); headMid.appendChild(metaRow);
+
+    const pill = document.createElement('span');
+    pill.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:5px 12px;border-radius:20px;flex-shrink:0;background:'+st.bg+';color:'+st.color+';border:1px solid '+st.color;
+    pill.textContent = st.label;
+
+    head.appendChild(avatar); head.appendChild(headMid); head.appendChild(pill);
+
+    // Why join — truncated preview
+    const why = document.createElement('div');
+    why.style.cssText = 'font-size:13px;line-height:1.6;color:var(--tp)';
+    const whyLbl = document.createElement('div');
+    whyLbl.style.cssText = 'font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:5px';
     whyLbl.textContent = 'Why Join';
-    why.appendChild(whyLbl); why.appendChild(document.createElement('br'));
-    why.appendChild(document.createTextNode(a.why_join));
+    const whyText = document.createElement('div');
+    const fullText = a.why_join || '—';
+    const truncated = fullText.length > 240 ? fullText.slice(0, 240).trim() + '…' : fullText;
+    whyText.textContent = truncated;
+    why.appendChild(whyLbl); why.appendChild(whyText);
+    if (fullText.length > 240) {
+      const more = document.createElement('span');
+      more.style.cssText = 'color:var(--gold);font-size:12px;cursor:pointer;margin-top:4px;display:inline-block';
+      more.textContent = 'Read full application →';
+      more.addEventListener('click', () => openAppModal(a));
+      why.appendChild(more);
+    }
 
     card.appendChild(head); card.appendChild(why);
+
+    // Actions
     const actions = document.createElement('div');
     actions.className = 'app-actions';
     if (!a.status||a.status==='pending') {
@@ -3574,8 +3663,13 @@ async function loadApps() {
       const rej  = document.createElement('button'); rej.className='btn danger'; rej.textContent='❌ Reject';
       rej.addEventListener('click', () => updateApp(a.id,'rejected'));
       actions.appendChild(appr); actions.appendChild(rej);
+    } else if (a.status==='approved' || a.status==='rejected') {
+      // Allow reverting to pending for re-review
+      const revert = document.createElement('button'); revert.className='btn'; revert.style.cssText='border-color:var(--ts);color:var(--ts)'; revert.textContent='↩ Re-open';
+      revert.addEventListener('click', () => updateApp(a.id,'pending'));
+      actions.appendChild(revert);
     }
-    const del = document.createElement('button'); del.className='btn'; del.textContent='🗑️ Delete'; del.style.marginLeft='auto';
+    const del = document.createElement('button'); del.className='btn danger'; del.textContent='🗑️ Delete'; del.style.marginLeft='auto';
     del.addEventListener('click', () => deleteApp(a.id));
     actions.appendChild(del);
     card.appendChild(actions);
@@ -4189,21 +4283,76 @@ function closeAppModal() {
 function openAppModal(a) {
   const content  = $('app-modal-content');
   const actions  = $('app-modal-actions');
-  const contact  = a.backstory?.startsWith('Email:') ? a.backstory : (a.name || '—');
-  const statusCls = 's-' + (a.status||'pending');
+
+  // Parse email + discord
+  let email = '', discord = '';
+  if (a.backstory) {
+    const em = a.backstory.match(/Email:\s*([^|]+)/i);
+    const dc = a.backstory.match(/Discord:\s*([^|]+)/i);
+    if (em) email = em[1].trim();
+    if (dc) discord = dc[1].trim();
+  }
+  if (!discord && a.name) discord = a.name;
+
+  const statusMeta = {
+    pending:  { label: 'Pending',    color: '#e0c068', bg: 'rgba(224,192,104,.12)' },
+    reviewed: { label: 'Ride Along', color: '#7ab8ff', bg: 'rgba(122,184,255,.12)' },
+    approved: { label: 'Approved',   color: '#6adba0', bg: 'rgba(106,219,160,.12)' },
+    rejected: { label: 'Rejected',   color: '#f08080', bg: 'rgba(240,128,128,.12)' },
+  };
+  const st = statusMeta[a.status||'pending'] || statusMeta.pending;
+  const initials = (a.char_name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+
+  const contactLine = (label, value, icon) => value
+    ? '<div style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:6px"><span style="color:var(--ts);font-size:12px;min-width:70px">'+icon+' '+label+'</span><span style="color:var(--tp);font-weight:500;word-break:break-all">'+escapeHTML(value)+'</span></div>'
+    : '';
 
   content.innerHTML =
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;flex-wrap:wrap;gap:8px">'
-    + '<div><div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px">Application</div>'
-    + '<h2 style="margin:0 0 4px;font-size:22px">' + (a.char_name||'Unknown') + '</h2>'
-    + '<div style="color:var(--ts);font-size:13px">' + fmtDate(a.created_at) + '</div></div>'
-    + '<span class="' + statusCls + '" style="font-size:13px;font-weight:600;text-transform:capitalize;border:1px solid currentColor;padding:4px 14px;border-radius:20px">' + (a.status||'pending') + '</span>'
+    // Header with avatar + status
+    '<div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:1.5rem">'
+    + '<div style="width:54px;height:54px;border-radius:50%;background:'+st.bg+';border:1px solid '+st.color+';color:'+st.color+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0">'+escapeHTML(initials)+'</div>'
+    + '<div style="flex:1;min-width:0">'
+    + '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px">Application · '+fmtDate(a.created_at)+'</div>'
+    + '<h2 style="margin:0;font-size:22px">'+escapeHTML(a.char_name||'Unknown')+'</h2>'
+    + '<div style="color:var(--ts);font-size:14px;margin-top:2px">Applying as '+escapeHTML(a.phone||'Unknown Rank')+'</div>'
     + '</div>'
-    + field('Applying As', a.phone || '—')
-    + field('Contact / Discord', contact)
+    + '<span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:5px 14px;border-radius:20px;flex-shrink:0;background:'+st.bg+';color:'+st.color+';border:1px solid '+st.color+'">'+st.label+'</span>'
+    + '</div>'
+    // Contact block
+    + '<div style="background:rgba(10,12,15,.4);border-radius:8px;padding:12px 16px;margin-bottom:1.25rem">'
+    + '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:8px">Contact</div>'
+    + contactLine('Email', email, '✉️')
+    + contactLine('Discord', discord, '💬')
+    + (!email && !discord ? '<div style="font-size:13px;color:var(--ts)">No contact details provided.</div>' : '')
+    + '</div>'
+    // Why join
     + field('Why Join VICE', a.why_join, true)
     + (a.experience ? field('Prior Experience', a.experience, true) : '')
-    + (a.backstory && !a.backstory.startsWith('Email:') ? field('Additional Info', a.backstory, true) : '');
+    // Ride-along / review notes
+    + '<div style="margin-bottom:1rem">'
+    + '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:4px">🚔 Ride-Along / Review Notes</div>'
+    + (officer?.role === 'admin'
+        ? '<textarea id="app-review-notes" class="fi" style="min-height:80px" placeholder="Record observations from the ride-along — professionalism, communication, suitability…">'+escapeHTML(a.review_notes||'')+'</textarea>'
+          + '<button class="btn" id="app-notes-save" style="margin-top:8px">💾 Save Notes</button>'
+          + '<span id="app-notes-msg" style="font-size:12px;margin-left:10px"></span>'
+        : '<div style="font-size:14px;color:var(--tp);white-space:pre-wrap;line-height:1.6;background:rgba(10,12,15,.4);border-radius:6px;padding:10px 14px">'+(a.review_notes ? escapeHTML(a.review_notes) : '<span style="color:var(--ts)">No notes recorded.</span>')+'</div>')
+    + '</div>';
+
+  // Wire notes save
+  const saveBtn = document.getElementById('app-notes-save');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+      const notes = document.getElementById('app-review-notes').value.trim();
+      const msg   = document.getElementById('app-notes-msg');
+      saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+      const { error } = await db().from('applications').update({ review_notes: notes || null }).eq('id', a.id);
+      saveBtn.disabled = false; saveBtn.textContent = '💾 Save Notes';
+      if (error) { msg.style.color = '#f44'; msg.textContent = 'Error: ' + error.message; return; }
+      msg.style.color = '#6adba0'; msg.textContent = '✓ Saved';
+      a.review_notes = notes; // update local copy
+      setTimeout(() => { msg.textContent = ''; }, 2500);
+    });
+  }
 
   actions.innerHTML = '';
   if (officer?.role === 'admin') {
@@ -4214,8 +4363,10 @@ function openAppModal(a) {
     } else if (a.status === 'reviewed') {
       addModalBtn(actions, '✅ Approve', 'btn success', '', () => { updateApp(a.id,'approved'); closeAppModal(); });
       addModalBtn(actions, '❌ Reject', 'btn danger', '', () => { updateApp(a.id,'rejected'); closeAppModal(); });
+    } else if (a.status === 'approved' || a.status === 'rejected') {
+      addModalBtn(actions, '↩ Re-open', 'btn', 'var(--ts)', () => { updateApp(a.id,'pending'); closeAppModal(); });
     }
-    addModalBtn(actions, '🗑️ Delete', 'btn', '', () => { deleteApp(a.id); closeAppModal(); });
+    addModalBtn(actions, '🗑️ Delete', 'btn danger', '', () => { deleteApp(a.id); closeAppModal(); });
   }
 
   $('app-modal-overlay').style.display = 'block';
