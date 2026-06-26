@@ -2200,7 +2200,7 @@ function openLogModal(l, arrestees) {
         + '<div style="margin-top:8px">'
         + (a.suspect_id
           ? '<label style="font-size:11px;color:var(--ts);cursor:pointer;display:inline-flex;align-items:center;gap:4px">📷 Update mugshot: <input type="file" accept="image/*" style="font-size:11px" data-sid="'+a.suspect_id+'" onchange="updateSuspectMugshot(this,this.dataset.sid)" /></label>'
-          : '<label style="font-size:11px;color:var(--ts);cursor:pointer;display:inline-flex;align-items:center;gap:4px">📷 Add mugshot: <input type="file" accept="image/*" style="font-size:11px" data-name="'+encodeURIComponent(a.name||'')+'" onchange="uploadMugshotForName(this,decodeURIComponent(this.dataset.name))" /></label>')
+          : '<label style="font-size:11px;color:var(--ts);cursor:pointer;display:inline-flex;align-items:center;gap:4px">📷 Add mugshot: <input type="file" accept="image/*" style="font-size:11px" data-name="'+encodeURIComponent(a.name||'')+'" data-aid="'+a.id+'" onchange="uploadMugshotForName(this,decodeURIComponent(this.dataset.name),this.dataset.aid)" /></label>')
         + '</div>'
         + '</div></div>';
       arDiv.appendChild(ad);
@@ -4353,24 +4353,55 @@ async function updateSuspectMugshot(input, suspectId) {
   _suspectsCache = null;
 }
 
-async function uploadMugshotForName(input, name) {
+async function uploadMugshotForName(input, name, arresteeId) {
   const file = input.files[0];
   if (!file || !name) return;
   const label = input.closest('label');
-  if (label) label.textContent = 'Uploading...';
-  const ext  = file.name.split('.').pop();
+  if (label) label.textContent = 'Uploading…';
+  const ext  = (file.name.split('.').pop() || 'png').toLowerCase();
   const path = 'suspects/' + name.toLowerCase().replace(/\s+/g,'-') + '-' + Date.now() + '.' + ext;
   const { error: upErr } = await db().storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
-  if (upErr) { if (label) label.textContent = '❌ Upload failed'; return; }
+  if (upErr) { if (label) label.textContent = '❌ Upload failed: ' + upErr.message; return; }
   const { data: urlData } = db().storage.from(STORAGE_BUCKET).getPublicUrl(path);
+
+  // Create or update the suspect record
+  let suspectId = null;
   const { data: existing } = await db().from('suspects').select('id').ilike('name', name).maybeSingle();
   if (existing) {
     await db().from('suspects').update({ mugshot_url: urlData.publicUrl }).eq('id', existing.id);
+    suspectId = existing.id;
   } else {
-    await db().from('suspects').insert({ name, mugshot_url: urlData.publicUrl });
+    const { data: ins } = await db().from('suspects').insert({ name, mugshot_url: urlData.publicUrl }).select('id').single();
+    suspectId = ins?.id || null;
   }
-  if (label) label.textContent = '✓ Mugshot saved — reload to see it';
+
+  // Link the suspect to this arrestee row so the mugshot shows on the log
+  if (!arresteeId) {
+    if (label) label.textContent = '⚠ Saved to suspect, but no arrestee ID to link';
+    _suspectsCache = null;
+    return;
+  }
+  if (arresteeId && suspectId) {
+    const { data: linked, error: linkErr } = await db().from('log_arrestees').update({ suspect_id: suspectId }).eq('id', arresteeId).select();
+    if (linkErr) {
+      if (label) label.textContent = '❌ Link error: ' + linkErr.message;
+      return;
+    }
+    if (!linked || !linked.length) {
+      if (label) label.textContent = '⚠ Saved to suspect, but log link returned 0 rows (RLS?)';
+      _suspectsCache = null;
+      return;
+    }
+  }
+
+  if (label) label.textContent = '✓ Mugshot saved';
   _suspectsCache = null;
+  // Refresh the log modal so the mugshot appears immediately
+  await loadDashLogs();
+  if (arresteeId && typeof openLogById === 'function') {
+    const logId = (_dashArrMap && Object.keys(_dashArrMap).find(lid => (_dashArrMap[lid]||[]).some(a => String(a.id) === String(arresteeId))));
+    if (logId) openLogById(parseInt(logId));
+  }
 }
 
 function closeAppModal() {
