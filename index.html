@@ -2195,7 +2195,7 @@ function openLogModal(l, arrestees) {
         + '<div style="flex:1"><div style="font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">' + (a.name||'Unknown') + mHighRisk + '</div>'
         + '<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Charges:</strong> ' + (a.charges||'—') + '</div>'
         + (a.evidence?'<div style="font-size:12px;color:var(--ts);margin-bottom:3px"><strong style="color:var(--tp)">Evidence:</strong> '+a.evidence.split(EVIDENCE_SEP).map((u,i)=>u.startsWith('http')?'<a href="'+u+'" target="_blank" style="color:var(--gold)">View '+(a.evidence.split(EVIDENCE_SEP).length>1?'#'+(i+1):'')+'</a>':u).join(' &nbsp;')+'</div>':'')
-        + '<div style="margin-top:4px"><label style="font-size:11px;color:var(--ts);cursor:pointer">📎 Add evidence: <input type="file" accept="image/*" multiple style="font-size:11px" onchange="uploadEditEvidence(this,'+a.id+','+JSON.stringify(a.evidence||'')+')"/></label><span id="ev-msg-'+a.id+'" style="font-size:11px;color:var(--gold);margin-left:6px"></span></div>'
+        + '<div style="margin-top:4px"><label style="font-size:11px;color:var(--ts);cursor:pointer">📎 Add evidence: <input type="file" accept="image/*" multiple style="font-size:11px" data-aid="'+a.id+'" onchange="uploadEditEvidence(this,this.dataset.aid)"/></label><span id="ev-msg-'+a.id+'" style="font-size:11px;color:var(--gold);margin-left:6px"></span></div>'
         + (mBioStr ? '<div style="font-size:11px;color:var(--gold);margin-top:4px">'+mBioStr+' on file</div>' : '')
         + '<div style="margin-top:8px">'
         + (a.suspect_id
@@ -2310,7 +2310,7 @@ async function openLogById(logId) {
   setTimeout(() => tryOpen(3), 400);
 }
 
-async function uploadEditEvidence(input, arresteeId, existingEvidence) {
+async function uploadEditEvidence(input, arresteeId) {
   const files = Array.from(input.files);
   if (!files.length) return;
   const msgEl = document.getElementById('ev-msg-' + arresteeId);
@@ -2328,10 +2328,10 @@ async function uploadEditEvidence(input, arresteeId, existingEvidence) {
   let existing = [];
   try {
     const { data: cur } = await db().from('log_arrestees').select('evidence').eq('id', arresteeId).single();
-    if (cur?.evidence) existing = cur.evidence.split(EVIDENCE_SEP).filter(Boolean);
-  } catch(e) {
-    if (existingEvidence) existing = existingEvidence.split(EVIDENCE_SEP).filter(Boolean);
-  }
+    if (cur?.evidence && cur.evidence.trim() && cur.evidence.trim() !== '-') {
+      existing = cur.evidence.split(EVIDENCE_SEP).filter(Boolean);
+    }
+  } catch(e) { /* default to no existing */ }
   const merged = [...existing, ...urls].join(EVIDENCE_SEP);
   const { data: updated, error: dbErr } = await db().from('log_arrestees').update({ evidence: merged }).eq('id', arresteeId).select();
   if (dbErr) { if (msgEl) { msgEl.style.color='#f44'; msgEl.textContent = 'Error: ' + dbErr.message; } return; }
@@ -2339,11 +2339,11 @@ async function uploadEditEvidence(input, arresteeId, existingEvidence) {
     if (msgEl) { msgEl.style.color='#f44'; msgEl.textContent = 'Save blocked — run SQL migration 009 (no UPDATE permission).'; }
     return;
   }
-  if (msgEl) { msgEl.style.color = '#6adba0'; msgEl.textContent = '✓ ' + urls.length + ' file(s) added'; }
+  if (msgEl) { msgEl.style.color = '#6adba0'; msgEl.textContent = '✓ ' + urls.length + ' file(s) added — reload to see'; }
   // Refresh the list AND reopen the modal with fresh data so it shows immediately
   await loadDashLogs();
   if (typeof openLogById === 'function') {
-    const logId = (_dashArrMap && Object.keys(_dashArrMap).find(lid => (_dashArrMap[lid]||[]).some(a => a.id === arresteeId)));
+    const logId = (_dashArrMap && Object.keys(_dashArrMap).find(lid => (_dashArrMap[lid]||[]).some(a => String(a.id) === String(arresteeId))));
     if (logId) openLogById(parseInt(logId));
   }
 }
