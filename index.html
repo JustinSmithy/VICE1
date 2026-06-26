@@ -297,6 +297,45 @@ textarea.fi{resize:vertical;min-height:80px}
   .hb-area-grid{grid-template-columns:1fr}
   .dispatch-ref-grid{grid-template-columns:1fr !important}
 }
+/* ── Mobile: public-facing pages ──────────────────────────────── */
+@media(max-width:640px){
+  /* Nav becomes a wrapping, auto-height bar */
+  body>nav{height:auto;flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .nb{gap:8px;flex:1;min-width:0}
+  .nb-title{font-size:14px}
+  .nb-sub{font-size:10px}
+  .nb > div:last-child{display:none}            /* hide "Horizon Gaming" divider label */
+  .nl{flex-wrap:wrap;gap:6px;width:100%;justify-content:flex-start}
+  .nl .btn{padding:6px 10px;font-size:12px;flex:0 0 auto}
+  /* Hero */
+  .hero{min-height:auto;padding:2.5rem 1.25rem 2rem}
+  .hero-eyebrow{font-size:10px;letter-spacing:2px;margin-bottom:1rem}
+  .hero h1, .hero .hero-title{font-size:1.8rem !important;line-height:1.15}
+  .hero p{font-size:14px}
+  .hero img{max-width:80% !important;height:auto}
+  /* Stat grid stacks to 2 columns */
+  .sg{grid-template-columns:1fr 1fr}
+  /* Section padding tighter */
+  .sec{padding:2rem 1rem}
+  /* Apply / cards */
+  .apply-sec{padding:2rem 1rem 3rem}
+  .apply-card{padding:1.5rem 1.25rem}
+  .apply-grid{grid-template-columns:1fr}
+  /* Handbook */
+  .hb-sec{padding-left:0;padding-right:0}
+  .hb-rank-grid{grid-template-columns:1fr !important}
+  .hb-num{font-size:2rem}
+  .hb-title{font-size:1.3rem}
+  /* Tables scroll horizontally rather than squashing */
+  table{font-size:12px}
+  /* FAQ */
+  .faq-q{font-size:13px;padding:11px 13px}
+  .faq-a{font-size:12px}
+  /* Shrink page-title h1s that use inline font-size */
+  #pg-apply h1, #pg-faq h1, #pg-handbook h1{font-size:1.5rem !important}
+  /* Logos on apply/handbook headers */
+  #pg-apply img, #pg-handbook img{max-width:70% !important;height:auto}
+}
 </style>
 </head>
 <body>
@@ -829,7 +868,7 @@ textarea.fi{resize:vertical;min-height:80px}
       <div class="hb-num">09</div><h2 class="hb-title">Vehicles &amp; Equipment</h2>
       <p class="hb-body">Vice Unit officers are authorised to operate the following divisional vehicles during active duty. All vehicles are Department property and must be used strictly for official law enforcement purposes. Officers are accountable for the condition of any vehicle in their charge.</p>
       <div style="display:grid;gap:.75rem;margin-top:1.5rem">
-        <div class="hb-rank-card"><div class="hb-rbadge">🚗</div><div><div class="hb-rname">Bullet</div><div class="hb-rdesc">High-speed pursuit vehicle. Authorised for rapid response and high-speed chases. Its top speed makes it difficult to control in dense urban environments — handle with care and only in appropriate conditions.</div></div></div>
+        <div class="hb-rank-card"><div class="hb-rbadge">🚗</div><div><div class="hb-rname">Cheetah</div><div class="hb-rdesc">High-speed pursuit vehicle. Authorised for rapid response and high-speed chases. Its top speed makes it difficult to control in dense urban environments — handle with care and only in appropriate conditions.</div></div></div>
         <div class="hb-rank-card"><div class="hb-rbadge">🚓</div><div><div class="hb-rname">Cruiser</div><div class="hb-rdesc">Standard marked patrol vehicle. The primary vehicle for general patrol, traffic stops, and area monitoring. Reliable and well-balanced for everyday enforcement duties.</div></div></div>
         <div class="hb-rank-card"><div class="hb-rbadge">🚙</div><div><div class="hb-rname">Huntley S</div><div class="hb-rdesc">Unmarked SUV. Used for surveillance and covert work. Blends into civilian traffic, making it the preferred choice for stake-outs and discreet approaches.</div></div></div>
         <div class="hb-rank-card"><div class="hb-rbadge">🚘</div><div><div class="hb-rname">Sultan</div><div class="hb-rdesc">Unmarked performance sedan. Versatile across both pursuit and covert roles, with strong handling across industrial areas and back streets.</div></div></div>
