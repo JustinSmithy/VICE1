@@ -381,7 +381,7 @@ textarea.fi{resize:vertical;min-height:80px}
   <div id="oom-spotlight" style="display:none;padding:2.5rem 2rem 0">
     <div style="max-width:680px;margin:0 auto;background:linear-gradient(135deg,rgba(201,168,76,.10),rgba(201,168,76,.03));border:1px solid rgba(201,168,76,.35);border-radius:16px;padding:2rem;text-align:center;position:relative;overflow:hidden">
       <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:1rem">🏆 Officer of the Month</div>
-      <div id="oom-avatar" style="width:84px;height:84px;border-radius:50%;background:rgba(201,168,76,.15);border:2px solid var(--gold);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:30px;margin:0 auto 1rem"></div>
+      <div id="oom-avatar" style="width:96px;height:96px;border-radius:50%;background:rgba(201,168,76,.15);border:2px solid var(--gold);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:32px;margin:0 auto 1rem;overflow:hidden;background-size:cover;background-position:center"></div>
       <div id="oom-name" style="font-size:24px;font-weight:800;margin-bottom:2px"></div>
       <div id="oom-rank" style="font-size:14px;color:var(--gold);margin-bottom:.25rem"></div>
       <div id="oom-month" style="font-size:12px;color:var(--ts);letter-spacing:1px;text-transform:uppercase;margin-bottom:1rem"></div>
@@ -1422,6 +1422,11 @@ textarea.fi{resize:vertical;min-height:80px}
               <div><label class="flbl">Month Label</label><input class="fi" id="oom-in-month" placeholder="e.g. June 2026" /></div>
               <div><label class="flbl">Citation (optional)</label><input class="fi" id="oom-in-blurb" placeholder="Short reason for the award" /></div>
             </div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+              <div id="oom-photo-preview" style="width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg2);background-size:cover;background-position:center;flex-shrink:0"></div>
+              <label style="font-size:12px;color:var(--ts);cursor:pointer">📷 Officer photo: <input type="file" accept="image/*" id="oom-in-photo" style="font-size:12px" /></label>
+              <span id="oom-photo-msg" style="font-size:11px;color:var(--gold)"></span>
+            </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <button class="btn success" id="oom-save-btn">💾 Set Officer of the Month</button>
               <button class="btn" id="oom-clear-btn" style="border-color:var(--ts);color:var(--ts)">Clear</button>
@@ -1984,6 +1989,24 @@ document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
 // ═══════════════════════════════════════════════════
 // PUBLIC STATS
 // ═══════════════════════════════════════════════════
+let _oomPhotoUrl = null; // holds the current/just-uploaded photo URL
+
+async function uploadOomPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const msg = $('oom-photo-msg');
+  msg.style.color = 'var(--gold)'; msg.textContent = 'Uploading…';
+  const ext  = (file.name.split('.').pop() || 'png').toLowerCase();
+  const path = 'oom/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
+  const { error } = await db().storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true });
+  if (error) { msg.style.color='#f44'; msg.textContent = 'Upload failed: ' + error.message; return; }
+  const { data: urlData } = db().storage.from(STORAGE_BUCKET).getPublicUrl(path);
+  _oomPhotoUrl = urlData.publicUrl;
+  const prev = $('oom-photo-preview');
+  if (prev) prev.style.backgroundImage = 'url("' + _oomPhotoUrl + '")';
+  msg.style.color = '#6adba0'; msg.textContent = '✓ Photo ready — click Set to save';
+}
+
 async function prefillOfficerOfMonth() {
   if (officer?.role !== 'admin') { const a=$('oom-admin'); if(a) a.style.display='none'; return; }
   const a=$('oom-admin'); if(a) a.style.display='';
@@ -1994,6 +2017,9 @@ async function prefillOfficerOfMonth() {
       if ($('oom-in-rank'))  $('oom-in-rank').value  = data.rank || '';
       if ($('oom-in-month')) $('oom-in-month').value = data.month_label || '';
       if ($('oom-in-blurb')) $('oom-in-blurb').value = data.blurb || '';
+      _oomPhotoUrl = data.photo_url || null;
+      const prev = $('oom-photo-preview');
+      if (prev) prev.style.backgroundImage = data.photo_url ? 'url("'+data.photo_url+'")' : '';
     }
   } catch(e) {}
 }
@@ -2005,6 +2031,7 @@ async function saveOfficerOfMonth() {
     rank:         $('oom-in-rank').value.trim() || null,
     month_label:  $('oom-in-month').value.trim() || null,
     blurb:        $('oom-in-blurb').value.trim() || null,
+    photo_url:    _oomPhotoUrl || null,
     updated_at:   new Date().toISOString()
   };
   const btn = $('oom-save-btn'); btn.disabled = true; btn.textContent = 'Saving…';
@@ -2019,7 +2046,9 @@ async function saveOfficerOfMonth() {
 async function clearOfficerOfMonth() {
   if (!confirm('Clear the Officer of the Month? The public spotlight will be hidden.')) return;
   ['oom-in-name','oom-in-rank','oom-in-month','oom-in-blurb'].forEach(id => { if($(id)) $(id).value=''; });
-  await db().from('officer_of_month').update({ officer_name:null, rank:null, month_label:null, blurb:null, updated_at:new Date().toISOString() }).eq('id',1);
+  _oomPhotoUrl = null;
+  const prev = $('oom-photo-preview'); if (prev) prev.style.backgroundImage = '';
+  await db().from('officer_of_month').update({ officer_name:null, rank:null, month_label:null, blurb:null, photo_url:null, updated_at:new Date().toISOString() }).eq('id',1);
   const msg = $('oom-admin-msg'); msg.style.color='var(--ts)'; msg.textContent='Cleared — spotlight hidden.';
   setTimeout(()=>{ msg.textContent=''; }, 3000);
 }
@@ -2031,7 +2060,14 @@ async function loadOfficerOfMonth() {
     const { data } = await db().from('officer_of_month').select('*').eq('id', 1).single();
     if (!data || !data.officer_name) { box.style.display = 'none'; return; }
     const initials = data.officer_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
-    $('oom-avatar').textContent = initials;
+    const av = $('oom-avatar');
+    if (data.photo_url) {
+      av.style.backgroundImage = 'url("' + data.photo_url + '")';
+      av.textContent = '';
+    } else {
+      av.style.backgroundImage = '';
+      av.textContent = initials;
+    }
     $('oom-name').textContent   = data.officer_name;
     $('oom-rank').textContent   = data.rank || '';
     $('oom-month').textContent  = data.month_label || '';
@@ -4426,6 +4462,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Officer of the Month admin buttons
   if ($('oom-save-btn'))  $('oom-save-btn').addEventListener('click', saveOfficerOfMonth);
   if ($('oom-clear-btn')) $('oom-clear-btn').addEventListener('click', clearOfficerOfMonth);
+  if ($('oom-in-photo'))  $('oom-in-photo').addEventListener('change', function(){ uploadOomPhoto(this); });
 
   // Activity period buttons
   ['month','7','30','all'].forEach(p => {
